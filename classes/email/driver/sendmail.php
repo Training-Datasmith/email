@@ -1,4 +1,6 @@
 <?php
+
+declare(strict_types=1);
 /**
  * Fuel is a fast, lightweight, community driven PHP 5.4+ framework.
  *
@@ -12,47 +14,49 @@
 
 namespace Email;
 
-class SendmailConnectionException extends \FuelException {}
+class SendmailConnectionException extends \FuelException
+{
+}
 
-class SendmailFailedException extends \EmailSendingFailedException {}
+class SendmailFailedException extends \EmailSendingFailedException
+{
+}
 
 class Email_Driver_Sendmail extends \Email_Driver
 {
-	/**
-	 * Initalted all needed for Sendmail mailing.
-	 *
-	 * @throws \SendmailConnectionException Could not open a sendmail connection
-	 * @throws \SendmailFailedException     Failed sending email through sendmail
-	 *
-	 * @return  bool    Success boolean
-	 */
-	protected function _send()
-	{
-		// Build the message
-		$message = $this->build_message();
+    /**
+     * Initalted all needed for Sendmail mailing.
+     *
+     * @throws \SendmailConnectionException Could not open a sendmail connection
+     * @throws \SendmailFailedException     Failed sending email through sendmail
+     *
+     * @return  bool    Success boolean
+     */
+    protected function _send()
+    {
+        // Build the message
+        $message = $this->build_message();
 
-		// Open a connection
-		$return_path = ($this->config['return_path'] !== false) ? $this->config['return_path'] : $this->config['from']['email'];
-		$handle = @popen($this->config['sendmail_path'] . " -oi -f ".$return_path." -t", 'w');
+        // Open a connection
+        $return_path = ($this->config['return_path'] !== false) ? $this->config['return_path'] : $this->config['from']['email'];
+        $handle = @popen($this->config['sendmail_path'] . ' -oi -f '.$return_path.' -t', 'w');
 
-		// No connection?
-		if(! is_resource($handle))
-		{
-			throw new \SendmailConnectionException('Could not open a sendmail connection at: '.$this->config['sendmail_path']);
-		}
+        // No connection?
+        if (! is_resource($handle)) {
+            throw new \SendmailConnectionException('Could not open a sendmail connection at: '.$this->config['sendmail_path']);
+        }
 
-		// Send the headers
-		fputs($handle, (string) $message['header']);
+        // Send the headers
+        fputs($handle, (string) $message['header']);
 
-		// Send the body
-		fputs($handle, (string) $message['body']);
+        // Send the body
+        fputs($handle, (string) $message['body']);
 
-		if(pclose($handle) === -1)
-		{
-			throw new \SendmailFailedException('Failed sending email through sendmail.');
-		}
+        if (pclose($handle) === -1) {
+            throw new \SendmailFailedException('Failed sending email through sendmail.');
+        }
 
-		return true;
-	}
+        return true;
+    }
 
 }

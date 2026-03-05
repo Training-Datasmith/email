@@ -1,4 +1,6 @@
 <?php
+
+declare(strict_types=1);
 /**
  * Fuel is a fast, lightweight, community driven PHP 5.4+ framework.
  *
@@ -19,163 +21,163 @@
  * This will allow you to upgrade fuel without losing your custom config.
  */
 
-return array(
+return [
 
-	/**
-	 * Default setup group
-	 */
-	'default_setup' => 'default',
+    /**
+     * Default setup group
+     */
+    'default_setup' => 'default',
 
-	/**
-	 * Default setup groups
-	 */
-	'setups' => array(
-		'default' => array(),
-	),
+    /**
+     * Default setup groups
+     */
+    'setups' => [
+        'default' => [],
+    ],
 
-	/**
-	 * Default settings
-	 */
-	'defaults' => array(
+    /**
+     * Default settings
+     */
+    'defaults' => [
 
-		/**
-		 * Mail useragent string
-		 */
-		'useragent' => 'FuelPHP, PHP 5.3 Framework',
+        /**
+         * Mail useragent string
+         */
+        'useragent' => 'FuelPHP, PHP 5.3 Framework',
 
-		/**
-		 * Mail driver (mail, smtp, sendmail, noop)
-		 */
-		'driver' => 'mail',
+        /**
+         * Mail driver (mail, smtp, sendmail, noop)
+         */
+        'driver' => 'mail',
 
-		/**
-		 * Whether to send as html, set to null for autodetection.
-		 */
-		'is_html' => null,
+        /**
+         * Whether to send as html, set to null for autodetection.
+         */
+        'is_html' => null,
 
-		/**
-		 * Email charset
-		 */
-		'charset' => 'utf-8',
+        /**
+         * Email charset
+         */
+        'charset' => 'utf-8',
 
-		/**
-		 * Whether to encode subject and recipient names.
-		 * Requires the mbstring extension: http://www.php.net/manual/en/ref.mbstring.php
-		 */
-		'encode_headers' => true,
+        /**
+         * Whether to encode subject and recipient names.
+         * Requires the mbstring extension: http://www.php.net/manual/en/ref.mbstring.php
+         */
+        'encode_headers' => true,
 
-		/**
-		 * Ecoding (8bit, base64 or quoted-printable)
-		 */
-		'encoding' => '8bit',
+        /**
+         * Ecoding (8bit, base64 or quoted-printable)
+         */
+        'encoding' => '8bit',
 
-		/**
-		 * Email priority
-		 */
-		'priority' => \Email::P_NORMAL,
+        /**
+         * Email priority
+         */
+        'priority' => \Email::P_NORMAL,
 
-		/**
-		 * Default sender details
-		 */
-		'from' => array(
-			'email' => false,
-			'name'  => false,
-		),
+        /**
+         * Default sender details
+         */
+        'from' => [
+            'email' => false,
+            'name'  => false,
+        ],
 
-		/**
-		 * Whether to validate email addresses
-		 */
-		'validate' => true,
+        /**
+         * Whether to validate email addresses
+         */
+        'validate' => true,
 
-		/**
-		 * Auto attach inline files
-		 */
-		'auto_attach' => true,
+        /**
+         * Auto attach inline files
+         */
+        'auto_attach' => true,
 
-		/**
-		 * Auto generate alt body from html body
-		 */
-		'generate_alt' => true,
+        /**
+         * Auto generate alt body from html body
+         */
+        'generate_alt' => true,
 
-		/**
-		 * Forces content type multipart/related to be set as multipart/mixed.
-		 */
-		'force_mixed' => false,
+        /**
+         * Forces content type multipart/related to be set as multipart/mixed.
+         */
+        'force_mixed' => false,
 
-		/**
-		 * Wordwrap size, set to null, 0 or false to disable wordwrapping
-		 */
-		'wordwrap' => 76,
+        /**
+         * Wordwrap size, set to null, 0 or false to disable wordwrapping
+         */
+        'wordwrap' => 76,
 
-		/**
-		 * Path to sendmail
-		 */
-		'sendmail_path' => '/usr/sbin/sendmail',
+        /**
+         * Path to sendmail
+         */
+        'sendmail_path' => '/usr/sbin/sendmail',
 
-		/**
-		 * SMTP settings
-		 */
-		'smtp' => array(
-			'host'     => '',
-			'port'     => 25,
-			'username' => '',
-			'password' => '',
-			'timeout'  => 5,
-			'starttls' => false,
-			'options'  => array(
-			),
-		),
+        /**
+         * SMTP settings
+         */
+        'smtp' => [
+            'host'     => '',
+            'port'     => 25,
+            'username' => '',
+            'password' => '',
+            'timeout'  => 5,
+            'starttls' => false,
+            'options'  => [
+            ],
+        ],
 
-		/**
-		 * Newline
-		 */
-		'newline' => "\n",
+        /**
+         * Newline
+         */
+        'newline' => "\n",
 
-		/**
-		 * Attachment paths
-		 */
-		'attach_paths' => array(
-			'', 		// absolute path
-			DOCROOT, 	// relative to docroot.
-		),
+        /**
+         * Attachment paths
+         */
+        'attach_paths' => [
+            '', 		// absolute path
+            DOCROOT, 	// relative to docroot.
+        ],
 
-		/**
-		 * Default return path
-		 */
-		'return_path' => false,
+        /**
+         * Default return path
+         */
+        'return_path' => false,
 
-		/**
-		 * Remove html comments
-		 */
-		'remove_html_comments' => true,
+        /**
+         * Remove html comments
+         */
+        'remove_html_comments' => true,
 
-		/**
-		 * Mandrill settings, see http://mandrill.com/
-		 */
-		'mandrill' => array(
-			'key' => 'api_key',
-			'message_options' => array(),
-			'send_options' => array(
-				'async'   => false,
-				'ip_pool' => null,
-				'send_at' => null,
-			),
-		),
+        /**
+         * Mandrill settings, see http://mandrill.com/
+         */
+        'mandrill' => [
+            'key' => 'api_key',
+            'message_options' => [],
+            'send_options' => [
+                'async'   => false,
+                'ip_pool' => null,
+                'send_at' => null,
+            ],
+        ],
 
-		/**
-		 * Mailgun settings, see http://www.mailgun.com/
-		 */
-		'mailgun' => array(
-			'key'    => 'api_key',
-			'domain' => 'domain',
-		),
+        /**
+         * Mailgun settings, see http://www.mailgun.com/
+         */
+        'mailgun' => [
+            'key'    => 'api_key',
+            'domain' => 'domain',
+        ],
 
-		/**
-		 * When relative protocol uri's ("//uri") are used in the email body,
-		 * you can specify here what you want them to be replaced with. Options
-		 * are "http://", "https://" or \Input::protocol() if you want to use
-		 * whatever was used to request the controller.
-		 */
-		'relative_protocol_replacement' => false,
-	),
-);
+        /**
+         * When relative protocol uri's ("//uri") are used in the email body,
+         * you can specify here what you want them to be replaced with. Options
+         * are "http://", "https://" or \Input::protocol() if you want to use
+         * whatever was used to request the controller.
+         */
+        'relative_protocol_replacement' => false,
+    ],
+];

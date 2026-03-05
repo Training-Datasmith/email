@@ -1,4 +1,6 @@
 <?php
+
+declare(strict_types=1);
 /**
  * Fuel is a fast, lightweight, community driven PHP 5.4+ framework.
  *
@@ -14,57 +16,53 @@ namespace Email;
 
 class Email_Driver_Mailgun extends \Email_Driver
 {
-	protected function _send()
-	{
-		$this->type = 'html';
+    protected function _send()
+    {
+        $this->type = 'html';
 
-		$message = $this->build_message();
+        $message = $this->build_message();
 
-		$mg = \Mailgun\Mailgun::create($this->config['mailgun']['key']);
+        $mg = \Mailgun\Mailgun::create($this->config['mailgun']['key']);
 
-		// Mailgun does not consider these "arbitrary headers"
-		$exclude = ['From'=>'From', 'To'=>'To', 'Cc'=>'Cc', 'Bcc'=>'Bcc', 'Subject'=>'Subject', 'Content-Type'=>'Content-Type', 'Content-Transfer-Encoding' => 'Content-Transfer-Encoding'];
-		$headers = array_diff_key($this->headers, $exclude);
+        // Mailgun does not consider these "arbitrary headers"
+        $exclude = ['From' => 'From', 'To' => 'To', 'Cc' => 'Cc', 'Bcc' => 'Bcc', 'Subject' => 'Subject', 'Content-Type' => 'Content-Type', 'Content-Transfer-Encoding' => 'Content-Transfer-Encoding'];
+        $headers = array_diff_key($this->headers, $exclude);
 
-		foreach ($this->extra_headers as $header => $value)
-		{
-			$headers[$header] = $value;
-		}
+        foreach ($this->extra_headers as $header => $value) {
+            $headers[$header] = $value;
+        }
 
-		// Standard required fields
-		$post_data = [
-			'from'    => static::format_addresses([['email' => $this->config['from']['email'], 'name' => $this->config['from']['name']]]),
-			'to'      => static::format_addresses($this->to),
-			'subject' => $this->subject,
-			'html'    => $message['body'],
-			'attachment' => [],
-			'inline' => []
-		];
+        // Standard required fields
+        $post_data = [
+            'from'    => static::format_addresses([['email' => $this->config['from']['email'], 'name' => $this->config['from']['name']]]),
+            'to'      => static::format_addresses($this->to),
+            'subject' => $this->subject,
+            'html'    => $message['body'],
+            'attachment' => [],
+            'inline' => [],
+        ];
 
-		// Optionally cc, bcc and alt_body
-		$this->cc and $post_data['cc'] = static::format_addresses($this->cc);
-		$this->bcc and $post_data['bcc'] = static::format_addresses($this->bcc);
-		$this->alt_body and $post_data['text'] = $this->alt_body;
+        // Optionally cc, bcc and alt_body
+        $this->cc and $post_data['cc'] = static::format_addresses($this->cc);
+        $this->bcc and $post_data['bcc'] = static::format_addresses($this->bcc);
+        $this->alt_body and $post_data['text'] = $this->alt_body;
 
-		// Mailgun's "arbitrary headers" are h: prefixed
-		foreach ($headers as $name => $value)
-		{
-			$post_data["h:{$name}"] = $value;
-		}
+        // Mailgun's "arbitrary headers" are h: prefixed
+        foreach ($headers as $name => $value) {
+            $post_data["h:{$name}"] = $value;
+        }
 
-		foreach ($this->attachments['attachment'] as $cid => $file)
-		{
-			$post_data['attachment'][] = ['filePath' => $file['file'][0], 'remoteName' => $file['file'][1]];
-		}
+        foreach ($this->attachments['attachment'] as $cid => $file) {
+            $post_data['attachment'][] = ['filePath' => $file['file'][0], 'remoteName' => $file['file'][1]];
+        }
 
-		foreach ($this->attachments['inline'] as $cid => $file)
-		{
-			$post_data['inline'][] = ['filePath' => $file['file'][0], 'remoteName' => substr((string) $cid, 4)];
-		}
+        foreach ($this->attachments['inline'] as $cid => $file) {
+            $post_data['inline'][] = ['filePath' => $file['file'][0], 'remoteName' => substr((string) $cid, 4)];
+        }
 
-		// And send the message out
-		$mg->messages()->send($this->config['mailgun']['domain'], $post_data);
+        // And send the message out
+        $mg->messages()->send($this->config['mailgun']['domain'], $post_data);
 
-		return true;
-	}
+        return true;
+    }
 }
