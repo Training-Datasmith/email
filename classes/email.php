@@ -53,30 +53,28 @@ class Email
 	 *
 	 * @return  Email_Driver    one of the email drivers
 	 */
-	public static function forge($setup = null, array $config = array())
+	public static function forge($setup = null, array $config = [])
 	{
 		empty($setup) and $setup = \Config::get('email.default_setup', 'default');
-		is_string($setup) and $setup = \Config::get('email.setups.'.$setup, array());
+		is_string($setup) and $setup = \Config::get('email.setups.'.$setup, []);
 
 		$setup = \Arr::merge(static::$_defaults, $setup);
 		$config = \Arr::merge($setup, $config);
 
-		$driver = '\\Email_Driver_'.ucfirst(strtolower($config['driver']));
+		$driver = '\\Email_Driver_'.ucfirst(strtolower((string) $config['driver']));
 
 		if( ! class_exists($driver, true))
 		{
 			throw new \FuelException('Could not find Email driver: '.$config['driver']. ' ('.$driver.')');
 		}
 
-		$driver = new $driver($config);
-
-		return $driver;
+		return new $driver($config);
 	}
 
 	/**
 	 * Init, config loading.
 	 */
-	public static function _init()
+	public static function _init(): void
 	{
 		\Config::load('email', true);
 		static::$_defaults = \Config::get('email.defaults');
@@ -92,7 +90,7 @@ class Email
 	 *
 	 * @return mixed
 	 */
-	public static function __callStatic($method, $args = array())
+	public static function __callStatic(string $method, array $args = [])
 	{
 		if(static::$_instance === false)
 		{
@@ -100,12 +98,12 @@ class Email
 			static::$_instance = &$instance;
 		}
 
-		if(is_callable(array(static::$_instance, $method)))
+		if(is_callable([static::$_instance, $method]))
 		{
-			return call_fuel_func_array(array(static::$_instance, $method), $args);
+			return call_fuel_func_array([static::$_instance, $method], $args);
 		}
 
-		throw new \BadMethodCallException('Invalid method: '.get_called_class().'::'.$method);
+		throw new \BadMethodCallException('Invalid method: '.static::class.'::'.$method);
 	}
 
 }

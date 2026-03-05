@@ -23,7 +23,7 @@ class Email_Driver_Mailgun extends \Email_Driver
 		$mg = \Mailgun\Mailgun::create($this->config['mailgun']['key']);
 
 		// Mailgun does not consider these "arbitrary headers"
-		$exclude = array('From'=>'From', 'To'=>'To', 'Cc'=>'Cc', 'Bcc'=>'Bcc', 'Subject'=>'Subject', 'Content-Type'=>'Content-Type', 'Content-Transfer-Encoding' => 'Content-Transfer-Encoding');
+		$exclude = ['From'=>'From', 'To'=>'To', 'Cc'=>'Cc', 'Bcc'=>'Bcc', 'Subject'=>'Subject', 'Content-Type'=>'Content-Type', 'Content-Transfer-Encoding' => 'Content-Transfer-Encoding'];
 		$headers = array_diff_key($this->headers, $exclude);
 
 		foreach ($this->extra_headers as $header => $value)
@@ -32,14 +32,14 @@ class Email_Driver_Mailgun extends \Email_Driver
 		}
 
 		// Standard required fields
-		$post_data = array(
-			'from'    => static::format_addresses(array(array('email' => $this->config['from']['email'], 'name' => $this->config['from']['name']))),
+		$post_data = [
+			'from'    => static::format_addresses([['email' => $this->config['from']['email'], 'name' => $this->config['from']['name']]]),
 			'to'      => static::format_addresses($this->to),
 			'subject' => $this->subject,
 			'html'    => $message['body'],
-			'attachment' => array(),
-			'inline' => array()
-		);
+			'attachment' => [],
+			'inline' => []
+		];
 
 		// Optionally cc, bcc and alt_body
 		$this->cc and $post_data['cc'] = static::format_addresses($this->cc);
@@ -54,12 +54,12 @@ class Email_Driver_Mailgun extends \Email_Driver
 
 		foreach ($this->attachments['attachment'] as $cid => $file)
 		{
-			$post_data['attachment'][] = array('filePath' => $file['file'][0], 'remoteName' => $file['file'][1]);
+			$post_data['attachment'][] = ['filePath' => $file['file'][0], 'remoteName' => $file['file'][1]];
 		}
 
 		foreach ($this->attachments['inline'] as $cid => $file)
 		{
-			$post_data['inline'][] = array('filePath' => $file['file'][0], 'remoteName' => substr($cid, 4));
+			$post_data['inline'][] = ['filePath' => $file['file'][0], 'remoteName' => substr((string) $cid, 4)];
 		}
 
 		// And send the message out

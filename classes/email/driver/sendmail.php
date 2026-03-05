@@ -42,10 +42,10 @@ class Email_Driver_Sendmail extends \Email_Driver
 		}
 
 		// Send the headers
-		fputs($handle, $message['header']);
+		fputs($handle, (string) $message['header']);
 
 		// Send the body
-		fputs($handle, $message['body']);
+		fputs($handle, (string) $message['body']);
 
 		if(pclose($handle) === -1)
 		{

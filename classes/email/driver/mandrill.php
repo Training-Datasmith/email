@@ -22,28 +22,28 @@ class Email_Driver_Mandrill extends \Email_Driver
 	 *
 	 * @var array
 	 */
-	protected $merge_vars = array();
+	protected $merge_vars = [];
 
 	/**
 	 * Recipient merge vars
 	 *
 	 * @var array
 	 */
-	protected $rcpt_merge_vars = array();
+	protected $rcpt_merge_vars = [];
 
 	/**
 	 * Global metadata
 	 *
 	 * @var array
 	 */
-	protected $metadata = array();
+	protected $metadata = [];
 
 	/**
 	 * Recipient metadata
 	 *
 	 * @var array
 	 */
-	protected $rcpt_metadata = array();
+	protected $rcpt_metadata = [];
 
 	/**
 	 * {@inheritdoc}
@@ -75,53 +75,53 @@ class Email_Driver_Mandrill extends \Email_Driver
 		$to = array_merge($bcc, $cc, $to);
 
 		// Get recipient merge vars
-		$merge_vars = array();
+		$merge_vars = [];
 
 		foreach ($this->rcpt_merge_vars as $rcpt => $_merge_vars)
 		{
-			$merge_vars[] = array(
+			$merge_vars[] = [
 				'rcpt' => $rcpt,
 				'vars' => \Arr::keyval_to_assoc($_merge_vars, 'name', 'content'),
-			);
+			];
 		}
 
 		// Get recipient meta data
-		$metadata = array();
+		$metadata = [];
 
 		foreach ($this->rcpt_metadata as $rcpt => $_metadata)
 		{
-			$metadata[] = array(
+			$metadata[] = [
 				'rcpt'   => $rcpt,
 				'values' => $_metadata,
-			);
+			];
 		}
 
 		// Get attachments
-		$attachments = array();
+		$attachments = [];
 
 		foreach ($this->attachments['attachment'] as $cid => $attachment)
 		{
-			$attachments[] = array(
+			$attachments[] = [
 				'type'    => $attachment['mime'],
 				'name'    => $attachment['file'][1],
 				'content' => $attachment['contents'],
-			);
+			];
 		}
 
 		// Get inline images
-		$images = array();
+		$images = [];
 
 		foreach ($this->attachments['inline'] as $cid => $attachment)
 		{
 			if (\Str::starts_with($attachment['mime'], 'image/'))
 			{
-				$name = substr($cid, 4); // remove cid:
+				$name = substr((string) $cid, 4); // remove cid:
 
-				$images[] = array(
+				$images[] = [
 					'type'    => $attachment['mime'],
 					'name'    => $name,
 					'content' => $attachment['contents'],
-				);
+				];
 			}
 		}
 
@@ -133,14 +133,14 @@ class Email_Driver_Mandrill extends \Email_Driver
 
 		$important = false;
 
-		if (in_array($this->config['priority'], array(\Email::P_HIGH, \Email::P_HIGHEST)))
+		if (in_array($this->config['priority'], [\Email::P_HIGH, \Email::P_HIGHEST]))
 		{
 			$important = true;
 		}
 
-		$message_data = array(
+		$message_data = [
 			'html'               => $this->body,
-			'text'               => isset($this->alt_body) ? $this->alt_body : '',
+			'text'               => $this->alt_body ?? '',
 			'subject'            => $this->subject,
 			'from_email'         => $this->config['from']['email'],
 			'from_name'          => $this->config['from']['name'],
@@ -153,13 +153,13 @@ class Email_Driver_Mandrill extends \Email_Driver
 			'attachments'        => $attachments,
 			'images'             => $images,
 			'important'          => $important,
-		);
+		];
 
-		$message_options = \Arr::filter_keys($this->get_config('mandrill.message_options', array()), array_keys($message_data), true);
+		$message_options = \Arr::filter_keys($this->get_config('mandrill.message_options', []), array_keys($message_data), true);
 
 		$message_data = \Arr::merge($message_data, $message_options);
 
-		$send_options = extract($this->config['mandrill']['send_options'], EXTR_SKIP);
+		extract($this->config['mandrill']['send_options'], EXTR_SKIP);
 
 		$message->send($message_data, $async, $ip_pool, $send_at);
 
@@ -169,7 +169,7 @@ class Email_Driver_Mandrill extends \Email_Driver
 	/**
 	 * {@inheritdoc}
 	 */
-	public function attach($file, $inline = false, $cid = null, $mime = null, $name = null)
+	public function attach($file, $inline = false, $cid = null, $mime = null, $name = null): void
 	{
 		parent::attach($file, $inline, $cid, $mime, $name);
 
@@ -193,7 +193,7 @@ class Email_Driver_Mandrill extends \Email_Driver
 	 */
 	protected function build_rcpt($list = 'to')
 	{
-		return array_map(function ($item) use ($list)
+		return array_map(function (array $item) use ($list): array
 		{
 			$item['type'] = $list;
 
@@ -206,7 +206,7 @@ class Email_Driver_Mandrill extends \Email_Driver
 	 */
 	protected function clear_list($list)
 	{
-		is_array($list) or $list = array($list);
+		is_array($list) or $list = [$list];
 
 		foreach ($list as $_list)
 		{
@@ -227,14 +227,12 @@ class Email_Driver_Mandrill extends \Email_Driver
 	 */
 	public function get_merge_vars($key = null, $rcpt = null)
 	{
-		if (is_null($rcpt))
-		{
-			return \Arr::get($this->merge_vars, $key);
-		}
-		elseif (isset($this->rcpt_merge_vars[$rcpt]))
-		{
-			return \Arr::get($this->rcpt_merge_vars[$rcpt], $key);
-		}
+		if (is_null($rcpt)) {
+            return \Arr::get($this->merge_vars, $key);
+        }
+        if (isset($this->rcpt_merge_vars[$rcpt])) {
+            return \Arr::get($this->rcpt_merge_vars[$rcpt], $key);
+        }
 	}
 
 	/**
@@ -268,7 +266,7 @@ class Email_Driver_Mandrill extends \Email_Driver
 	 */
 	public function set_merge_var($key, $value = null, $rcpt = null)
 	{
-		is_array($key) or $key = array($key => $value);
+		is_array($key) or $key = [$key => $value];
 
 		if (is_null($rcpt))
 		{
@@ -276,7 +274,7 @@ class Email_Driver_Mandrill extends \Email_Driver
 		}
 		else
 		{
-			$merge_vars = \Arr::get($this->rcpt_merge_vars, $rcpt, array());
+			$merge_vars = \Arr::get($this->rcpt_merge_vars, $rcpt, []);
 			$this->rcpt_merge_vars[$rcpt] = \Arr::merge($merge_vars, $key);
 		}
 
@@ -292,14 +290,12 @@ class Email_Driver_Mandrill extends \Email_Driver
 	 */
 	public function get_metadata($key = null, $rcpt = null)
 	{
-		if (is_null($rcpt))
-		{
-			return \Arr::get($this->metadata, $key);
-		}
-		elseif (isset($this->rcpt_metadata[$rcpt]))
-		{
-			return \Arr::get($this->rcpt_metadata[$rcpt], $key);
-		}
+		if (is_null($rcpt)) {
+            return \Arr::get($this->metadata, $key);
+        }
+        if (isset($this->rcpt_metadata[$rcpt])) {
+            return \Arr::get($this->rcpt_metadata[$rcpt], $key);
+        }
 	}
 
 	/**
@@ -333,7 +329,7 @@ class Email_Driver_Mandrill extends \Email_Driver
 	 */
 	public function set_metadata($key, $value = null, $rcpt = null)
 	{
-		is_array($key) or $key = array($key => $value);
+		is_array($key) or $key = [$key => $value];
 
 		if (is_null($rcpt))
 		{
@@ -341,7 +337,7 @@ class Email_Driver_Mandrill extends \Email_Driver
 		}
 		else
 		{
-			$metadata = \Arr::get($this->rcpt_metadata, $rcpt, array());
+			$metadata = \Arr::get($this->rcpt_metadata, $rcpt, []);
 			$this->rcpt_metadata[$rcpt] = \Arr::merge($metadata, $key);
 		}
 

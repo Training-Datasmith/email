@@ -15,37 +15,32 @@ namespace Email;
 abstract class Email_Driver
 {
 	/**
-	 * Driver config
-	 */
-	protected $config = array();
-
-	/**
 	 * To recipients list
 	 */
-	protected $to = array();
+	protected $to = [];
 
 	/**
 	 * Cc recipients list
 	 */
-	protected $cc = array();
+	protected $cc = [];
 
 	/**
 	 * Bcc recipients list
 	 */
-	protected $bcc = array();
+	protected $bcc = [];
 
 	/**
 	 *	Reply to list
 	 */
-	protected $reply_to = array();
+	protected $reply_to = [];
 
 	/**
 	 * Attachments array
 	 */
-	protected $attachments = array(
-		'inline'     => array(),
-		'attachment' => array(),
-	);
+	protected $attachments = [
+		'inline'     => [],
+		'attachment' => [],
+	];
 
 	/**
 	 * Message body
@@ -65,22 +60,22 @@ abstract class Email_Driver
 	/**
 	 * Invalid addresses
 	 */
-	protected $invalid_addresses = array();
+	protected $invalid_addresses = [];
 
 	/**
 	 * Message boundaries
 	 */
-	protected $boundaries = array();
+	protected $boundaries = [];
 
 	/**
 	 * Message headers
 	 */
-	protected $headers = array();
+	protected $headers = [];
 
 	/**
 	 * Custom headers
 	 */
-	protected $extra_headers = array();
+	protected $extra_headers = [];
 
 	/**
 	 * Pipelining enabled?
@@ -97,10 +92,9 @@ abstract class Email_Driver
 	 *
 	 * @param	array	$config		driver config
 	 */
-	public function __construct(array $config)
-	{
-		$this->config = $config;
-	}
+	public function __construct(protected array $config)
+    {
+    }
 
 	/**
 	 * Get a driver config setting.
@@ -222,10 +216,8 @@ abstract class Email_Driver
 		if ($auto_attach)
 		{
 			// Auto attach all images
-			preg_match_all("/(src|background)=\"(.*)\"/Ui", $html, $images);
-			if ( ! empty($images[2]))
-			{
-				foreach ($images[2] as $i => $image_url)
+			preg_match_all("/(src|background)=\"(.*)\"/Ui", (string) $html, $images);
+			foreach ($images[2] as $i => $image_url)
 				{
 					// Don't attach absolute urls
 					if ( ! preg_match('/(^http\:\/\/|^https\:\/\/|^\/\/|^cid\:|^data\:|^#)/Ui', $image_url))
@@ -235,16 +227,15 @@ abstract class Email_Driver
 						{
 							$this->attach($image_url, true, $cid);
 						}
-						$html = preg_replace("/".$images[1][$i]."=\"".preg_quote($image_url, '/')."\"/Ui", $images[1][$i]."=\"".$cid."\"", $html);
+						$html = preg_replace("/".$images[1][$i]."=\"".preg_quote($image_url, '/')."\"/Ui", $images[1][$i]."=\"".$cid."\"", (string) $html);
 					}
 
 					// Deal with relative protocol URI's if needed
-					elseif ($scheme = $this->get_config('relative_protocol_replacement', false) and strpos($image_url, '//') === 0)
+					elseif ($scheme = $this->get_config('relative_protocol_replacement', false) and str_starts_with($image_url, '//'))
 					{
-						$html = preg_replace("/".$images[1][$i]."=\"".preg_quote($image_url, '/')."\"/Ui", $images[1][$i]."=\"".$scheme.substr($image_url, 2)."\"", $html);
+						$html = preg_replace("/".$images[1][$i]."=\"".preg_quote($image_url, '/')."\"/Ui", $images[1][$i]."=\"".$scheme.substr($image_url, 2)."\"", (string) $html);
 					}
 				}
-			}
 		}
 
 		$this->body = $html;
@@ -307,7 +298,7 @@ abstract class Email_Driver
 
 		if ($this->config['encode_headers'] and $this->config['from']['name'])
 		{
-			$this->config['from']['name'] = $this->encode_mimeheader((string) $this->config['from']['name']);
+			$this->config['from']['name'] = $this->encode_mimeheader($this->config['from']['name']);
 		}
 
 		return $this;
@@ -440,7 +431,7 @@ abstract class Email_Driver
 	{
 		if ( ! is_array($email))
 		{
-			$email = (is_string($name)) ? array($email => $name) : array($email);
+			$email = (is_string($name)) ? [$email => $name] : [$email];
 		}
 
 		foreach ($email as $_email => $name)
@@ -456,10 +447,10 @@ abstract class Email_Driver
 				$name = $this->encode_mimeheader($name);
 			}
 
-			$this->{$list}[$_email] = array(
+			$this->{$list}[$_email] = [
 				'name' => $name,
 				'email' => $_email,
-			);
+			];
 		}
 	}
 
@@ -472,11 +463,11 @@ abstract class Email_Driver
 	 */
 	protected function clear_list($list)
 	{
-		is_array($list) or $list = array($list);
+		is_array($list) or $list = [$list];
 
 		foreach ($list as $_list)
 		{
-			$this->{$_list} = array();
+			$this->{$_list} = [];
 		}
 	}
 
@@ -487,7 +478,7 @@ abstract class Email_Driver
 	 */
 	public function clear_recipients()
 	{
-		static::clear_list(array('to', 'cc', 'bcc'));
+		static::clear_list(['to', 'cc', 'bcc']);
 
 		return $this;
 	}
@@ -499,7 +490,7 @@ abstract class Email_Driver
 	 */
 	public function clear_addresses()
 	{
-		static::clear_list(array('to', 'cc', 'bcc', 'reply_to'));
+		static::clear_list(['to', 'cc', 'bcc', 'reply_to']);
 
 		return $this;
 	}
@@ -610,19 +601,19 @@ abstract class Email_Driver
 
 		$disp = ($inline) ? 'inline' : 'attachment';
 
-		$cid = empty($cid) ? 'cid:'.md5($file[1]) : trim($cid);
-		$cid = strpos($cid, 'cid:') === 0 ? $cid : 'cid:'.$cid;
+		$cid = empty($cid) ? 'cid:'.md5((string) $file[1]) : trim($cid);
+		$cid = str_starts_with($cid, 'cid:') ? $cid : 'cid:'.$cid;
 
 		// Fetch the file mime type.
 		$mime or $mime = static::attachment_mime($file[0]);
 
-		$this->attachments[$disp][$cid] = array(
+		$this->attachments[$disp][$cid] = [
 			'file' => $file,
 			'contents' => chunk_split(base64_encode($contents), 76, $this->config['newline']),
 			'mime' => $mime,
 			'disp' => $disp,
 			'cid' => $cid,
-		);
+		];
 
 		return $this;
 	}
@@ -636,7 +627,7 @@ abstract class Email_Driver
 	 *
 	 * @return string   path of the first found attachment
 	 */
-	protected function find_attachment($file)
+	protected function find_attachment(string $file)
 	{
 		foreach($this->get_config('attach_paths') as $path)
 		{
@@ -665,16 +656,16 @@ abstract class Email_Driver
 	{
 		$disp = ($inline) ? 'inline' : 'attachment';
 		$cid = empty($cid) ? 'cid:'.md5($filename) : trim($cid);
-		$cid = strpos($cid, 'cid:') === 0 ? $cid : 'cid:'.$cid;
+		$cid = str_starts_with($cid, 'cid:') ? $cid : 'cid:'.$cid;
 		$mime or $mime = static::attachment_mime($filename);
 
-		$this->attachments[$disp][$cid] = array(
-			'file' => array(0 => $filename, 1 => pathinfo($filename, PATHINFO_BASENAME)),
+		$this->attachments[$disp][$cid] = [
+			'file' => [0 => $filename, 1 => pathinfo($filename, PATHINFO_BASENAME)],
 			'contents' => static::encode_string($contents, 'base64', $this->config['newline']),
 			'mime' => $mime,
 			'disp' => $disp,
 			'cid' => $cid,
-		);
+		];
 
 		return $this;
 	}
@@ -686,10 +677,10 @@ abstract class Email_Driver
 	 */
 	public function clear_attachments()
 	{
-		$this->attachments = array(
-			'inline' => array(),
-			'attachment' => array(),
-		);
+		$this->attachments = [
+			'inline' => [],
+			'attachment' => [],
+		];
 
 		return $this;
 	}
@@ -725,9 +716,9 @@ abstract class Email_Driver
 	 */
 	protected function validate_addresses()
 	{
-		$failed = array();
+		$failed = [];
 
-		foreach (array('to', 'cc', 'bcc') as $list)
+		foreach (['to', 'cc', 'bcc'] as $list)
 		{
 			foreach ($this->{$list} as $recipient)
 			{
@@ -802,7 +793,7 @@ abstract class Email_Driver
 		}
 
 		// Reset the headers
-		$this->headers = array();
+		$this->headers = [];
 
 		// Set the email boundaries
 		$this->set_boundaries();
@@ -819,22 +810,17 @@ abstract class Email_Driver
 		{
 			$this->set_header('Return-Path', $this->config['from']['email']);
 		}
-
-		if (($this instanceof Email_Driver_Mail) !== true)
-		{
-			if ( ! empty($this->to))
+        if ( ! empty($this->to))
 			{
 				// Set from
 				$this->set_header('To', static::format_addresses($this->to));
 			}
+        // Set subject
+        $this->set_header('Subject', $this->subject);
 
-			// Set subject
-			$this->set_header('Subject', $this->subject);
-		}
+		$this->set_header('From', static::format_addresses([$this->config['from']]));
 
-		$this->set_header('From', static::format_addresses(array($this->config['from'])));
-
-		foreach (array('cc' => 'Cc', 'bcc' => 'Bcc', 'reply_to' => 'Reply-To') as $list => $header)
+		foreach (['cc' => 'Cc', 'bcc' => 'Bcc', 'reply_to' => 'Reply-To'] as $list => $header)
 		{
 			if (count($this->{$list}) > 0)
 			{
@@ -859,7 +845,6 @@ abstract class Email_Driver
 		$this->type = $this->get_mail_type();
 
 		$encoding = $this->config['encoding'];
-		$charset = $this->config['charset'];
 
 		if ($this->type !== 'plain' and $this->type !== 'html')
 		{
@@ -969,7 +954,7 @@ abstract class Email_Driver
 	 * Get the attachment headers
 	 *
 	 */
-	protected function get_attachment_headers($type, $boundary)
+	protected function get_attachment_headers(string $type, string $boundary)
 	{
 		$return = '';
 
@@ -980,7 +965,7 @@ abstract class Email_Driver
 			$return .= '--'.$boundary.$newline;
 			$return .= 'Content-Type: '.$attachment['mime'].'; name="'.$attachment['file'][1].'"'.$newline;
 			$return .= 'Content-Transfer-Encoding: base64'.$newline;
-			$type === 'inline' and $return .= 'Content-ID: <'.substr($attachment['cid'], 4).'>'.$newline;
+			$type === 'inline' and $return .= 'Content-ID: <'.substr((string) $attachment['cid'], 4).'>'.$newline;
 			$return .= 'Content-Disposition: '.$type.'; filename="'.$attachment['file'][1].'"'.$newline.$newline;
 			$return .= $attachment['contents'].$newline.$newline;
 		}
@@ -996,7 +981,7 @@ abstract class Email_Driver
 	protected function get_message_id()
 	{
 		$from = $this->config['from']['email'];
-		return "<".uniqid('').strstr($from, '@').">";
+		return "<".uniqid('').strstr((string) $from, '@').">";
 	}
 
 	/**
@@ -1007,7 +992,7 @@ abstract class Email_Driver
 	protected function get_mail_type()
 	{
 		$return = $this->config['is_html'] ? 'html' : 'plain' ;
-		$alt = trim($this->alt_body);
+		$alt = trim((string) $this->alt_body);
 		$return .= ($this->config['is_html'] and ! empty($alt)) ? '_alt' : '';
 		$return .= ($this->config['is_html'] and count($this->attachments['inline'])) ? '_inline' : '';
 		$return .= (count($this->attachments['attachment'])) ? '_attach' : '';
@@ -1024,29 +1009,18 @@ abstract class Email_Driver
 	 *
 	 * @return    string        Mail content type
 	 */
-	protected function get_content_type($mail_type, $boundary)
+	protected function get_content_type($mail_type, string $boundary)
 	{
 		$related = $this->config['force_mixed'] ? 'multipart/mixed; ' : 'multipart/related; ';
 
-		switch ($mail_type)
-		{
-			case 'plain':
-				return 'text/plain';
-			case 'plain_attach':
-			case 'html_attach':
-				return $related.$boundary;
-			case 'html':
-				return 'text/html';
-			case 'html_alt_attach':
-			case 'html_alt_inline_attach':
-				return 'multipart/mixed; '.$boundary;
-			case 'html_alt_inline':
-			case 'html_alt':
-			case 'html_inline':
-				return 'multipart/alternative; '.$boundary;
-			default:
-				throw new \FuelException('Invalid content-type'.$mail_type);
-		}
+		return match ($mail_type) {
+            'plain' => 'text/plain',
+            'plain_attach', 'html_attach' => $related.$boundary,
+            'html' => 'text/html',
+            'html_alt_attach', 'html_alt_inline_attach' => 'multipart/mixed; '.$boundary,
+            'html_alt_inline', 'html_alt', 'html_inline' => 'multipart/alternative; '.$boundary,
+            default => throw new \FuelException('Invalid content-type'.$mail_type),
+        };
 	}
 
 	/**
@@ -1063,7 +1037,7 @@ abstract class Email_Driver
 		$encoding = $this->config['encoding'];
 
 		$headers = '';
-		$parts = array('Date', 'Return-Path', 'From', 'To', 'Cc', 'Bcc', 'Reply-To', 'Subject', 'Message-ID', 'X-Priority', 'X-Mailer', 'MIME-Version', 'Content-Type');
+		$parts = ['Date', 'Return-Path', 'From', 'To', 'Cc', 'Bcc', 'Reply-To', 'Subject', 'Message-ID', 'X-Priority', 'X-Mailer', 'MIME-Version', 'Content-Type'];
 		$no_bcc and array_splice($parts, 5, 1);
 
 		foreach ($parts as $part)
@@ -1103,11 +1077,11 @@ abstract class Email_Driver
 				case 'html_attach':
 				case 'html_inline':
 					$body .= '--'.$this->boundaries[0].$newline;
-					$text_type = (stripos($this->type, 'html') !== false) ? 'html' : 'plain';
+					$text_type = (stripos((string) $this->type, 'html') !== false) ? 'html' : 'plain';
 					$body .= 'Content-Type: text/'.$text_type.'; charset="'.$charset.'"'.$newline;
 					$body .= 'Content-Transfer-Encoding: '.$encoding.$newline.$newline;
 					$body .= $this->body.$newline.$newline;
-					$attach_type = (stripos($this->type, 'attach') !== false) ? 'attachment' : 'inline';
+					$attach_type = (stripos((string) $this->type, 'attach') !== false) ? 'attachment' : 'inline';
 					$body .= $this->get_attachment_headers($attach_type, $this->boundaries[0]);
 					$body .= '--'.$this->boundaries[0].'--';
 					break;
@@ -1130,7 +1104,7 @@ abstract class Email_Driver
 				case 'html_inline_attach':
 					$body .= '--'.$this->boundaries[0].$newline;
 					$body .= 'Content-Type: multipart/alternative;'.$newline."\t boundary=\"{$this->boundaries[1]}\"".$newline.$newline;
-					if (stripos($this->type, 'alt') !== false)
+					if (stripos((string) $this->type, 'alt') !== false)
 					{
 						$body .= '--'.$this->boundaries[1].$newline;
 						$body .= 'Content-Type: text/plain; charset="'.$charset.'"'.$newline;
@@ -1141,7 +1115,7 @@ abstract class Email_Driver
 					$body .= 'Content-Type: text/html; charset="'.$charset.'"'.$newline;
 					$body .= 'Content-Transfer-Encoding: '.$encoding.$newline.$newline;
 					$body .= $this->body.$newline.$newline;
-					if (stripos($this->type, 'inline') !== false)
+					if (stripos((string) $this->type, 'inline') !== false)
 					{
 						$body .= $this->get_attachment_headers('inline', $this->boundaries[1]);
 						$body .= $this->alt_body.$newline.$newline;
@@ -1174,10 +1148,10 @@ abstract class Email_Driver
 
 		}
 
-		return array(
+		return [
 			'header' => $headers,
 			'body' => $body,
-		);
+		];
 	}
 
 	/**
@@ -1197,9 +1171,8 @@ abstract class Email_Driver
 	{
 		$length = ($length > 76) ? 76 : $length;
 		$is_html and $message = preg_replace('/[\r\n\t ]+/m', ' ', $message);
-		$message = wordwrap($message, $length, $newline, false);
 
-		return $message;
+		return wordwrap((string) $message, $length, $newline, false);
 	}
 
 	/**
@@ -1214,12 +1187,12 @@ abstract class Email_Driver
 	{
 		$newline or $newline = \Config::get('email.defaults.newline', "\n");
 
-		$replace = array(
+		$replace = [
 			"\r\n"	=> "\n",
 			"\n\r"	=> "\n",
 			"\r"	=> "\n",
 			"\n"	=> $newline,
-		);
+		];
 
 		foreach ($replace as $from => $to)
 		{
@@ -1244,18 +1217,12 @@ abstract class Email_Driver
 	{
 		$newline or $newline = \Config::get('email.defaults.newline', "\n");
 
-		switch ($encoding)
-		{
-			case 'quoted-printable':
-				return quoted_printable_encode($string);
-			case '7bit':
-			case '8bit':
-				return static::prep_newlines(rtrim($string, $newline), $newline);
-			case 'base64':
-				return chunk_split(base64_encode($string), 76, $newline);
-			default:
-				throw new \InvalidEmailStringEncoding($encoding.' is not a supported encoding method.');
-		}
+		return match ($encoding) {
+            'quoted-printable' => quoted_printable_encode($string),
+            '7bit', '8bit' => static::prep_newlines(rtrim($string, $newline), $newline),
+            'base64' => chunk_split(base64_encode($string), 76, $newline),
+            default => throw new \InvalidEmailStringEncoding($encoding.' is not a supported encoding method.'),
+        };
 	}
 
 	/**
@@ -1267,7 +1234,7 @@ abstract class Email_Driver
 	 */
 	protected static function format_addresses($addresses)
 	{
-		$return = array();
+		$return = [];
 
 		foreach ($addresses as $recipient)
 		{
@@ -1290,9 +1257,9 @@ abstract class Email_Driver
 	protected static function generate_alt($html, $wordwrap, $newline)
 	{
 		$html = preg_replace('/[ |	]{2,}/m', ' ', $html);
-		$html = trim(strip_tags(preg_replace('/<(head|title|style|script)[^>]*>.*?<\/\\1>/s', '', $html)));
+		$html = trim(strip_tags((string) preg_replace('/<(head|title|style|script)[^>]*>.*?<\/\\1>/s', '', (string) $html)));
 		$lines = explode($newline, $html);
-		$result = array();
+		$result = [];
 		$first_newline = true;
 		foreach ($lines as $line)
 		{

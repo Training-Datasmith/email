@@ -37,7 +37,7 @@ class Email_Driver_Smtp extends \Email_Driver
 	/**
 	 * The SMTP connection
 	 */
-	protected $smtp_connection = null;
+	protected $smtp_connection;
 
 	/**
 	 * Initiates the sending process.
@@ -103,22 +103,22 @@ class Email_Driver_Smtp extends \Email_Driver
 		$return_path = empty($this->config['return_path']) ? $this->config['from']['email'] : $this->config['return_path'];
 		$this->smtp_send('MAIL FROM:<' . $return_path .'>', 250);
 
-		foreach(array('to', 'cc', 'bcc') as $list)
+		foreach(['to', 'cc', 'bcc'] as $list)
 		{
 			foreach($this->{$list} as $recipient)
 			{
-				$this->smtp_send('RCPT TO:<'.$recipient['email'].'>', array(250, 251));
+				$this->smtp_send('RCPT TO:<'.$recipient['email'].'>', [250, 251]);
 			}
 		}
 
 		// Prepare for data sending
 		$this->smtp_send('DATA', 354);
 
-		$lines = explode($this->config['newline'], $message['header'].preg_replace('/^\./m', '..$1', $message['body']));
+		$lines = explode($this->config['newline'], $message['header'].preg_replace('/^\./m', '..$1', (string) $message['body']));
 
 		foreach($lines as $line)
 		{
-			if(substr($line, 0, 1) === '.')
+			if(str_starts_with($line, '.'))
 			{
 				$line = '.'.$line;
 			}
@@ -147,7 +147,7 @@ class Email_Driver_Smtp extends \Email_Driver
 		}
 
 		// add a transport if not given
-		if (strpos($this->config['smtp']['host'], '://') === false)
+		if (!str_contains((string) $this->config['smtp']['host'], '://'))
 		{
 			$this->config['smtp']['host'] = 'tcp://'.$this->config['smtp']['host'];
 		}
@@ -187,7 +187,7 @@ class Email_Driver_Smtp extends \Email_Driver
 		}
 
 		// Enable TLS encryption if needed, and we're connecting using TCP
-		if (\Arr::get($this->config, 'smtp.starttls', false) and strpos($this->config['smtp']['host'], 'tcp://') === 0)
+		if (\Arr::get($this->config, 'smtp.starttls', false) and str_starts_with((string) $this->config['smtp']['host'], 'tcp://'))
 		{
 			try
 			{
@@ -207,7 +207,7 @@ class Email_Driver_Smtp extends \Email_Driver
 			{
 				$this->smtp_send('EHLO'.' '.\Input::server('SERVER_NAME', 'localhost.local'), 250);
 			}
-			catch(SmtpCommandFailureException $e)
+			catch(SmtpCommandFailureException)
 			{
 				// Didn't work? Try HELO
 				$this->smtp_send('HELO'.' '.\Input::server('SERVER_NAME', 'localhost.local'), 250);
@@ -218,7 +218,7 @@ class Email_Driver_Smtp extends \Email_Driver
 		{
 			$this->smtp_send('HELP', 214);
 		}
-		catch(SmtpCommandFailureException $e)
+		catch(SmtpCommandFailureException)
 		{
 			// Let this pass as some servers don't support this.
 		}
@@ -240,8 +240,8 @@ class Email_Driver_Smtp extends \Email_Driver
 	protected function smtp_authenticate()
 	{
 		// Encode login data
-		$username = base64_encode($this->config['smtp']['username']);
-		$password = base64_encode($this->config['smtp']['password']);
+		$username = base64_encode((string) $this->config['smtp']['username']);
+		$password = base64_encode((string) $this->config['smtp']['password']);
 
 		try
 		{
@@ -255,7 +255,7 @@ class Email_Driver_Smtp extends \Email_Driver
 			$this->smtp_send($password, 235);
 
 		}
-		catch(SmtpCommandFailureException $e)
+		catch(SmtpCommandFailureException)
 		{
 			throw new SmtpAuthenticationFailedException('Failed authentication.');
 		}
@@ -276,7 +276,7 @@ class Email_Driver_Smtp extends \Email_Driver
 	 */
 	protected function smtp_send($data, $expecting, $return_number = false)
 	{
-		! is_array($expecting) and $expecting !== false and $expecting = array($expecting);
+		! is_array($expecting) and $expecting !== false and $expecting = [$expecting];
 
 		stream_set_timeout($this->smtp_connection, $this->config['smtp']['timeout']);
 		if ( ! fputs($this->smtp_connection, $data . $this->config['newline']))
