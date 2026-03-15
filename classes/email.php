@@ -39,7 +39,7 @@ class Email
     /**
      * Instance for singleton usage.
      */
-    public static $_instance = false;
+    protected static ?Email_Driver $_instance = null;
 
     /**
      * Driver config defaults.
@@ -103,9 +103,8 @@ class Email
      */
     public static function __callStatic(string $method, array $args = [])
     {
-        if (static::$_instance === false) {
-            $instance = static::forge();
-            static::$_instance = &$instance;
+        if (static::$_instance === null) {
+            static::$_instance = static::forge();
         }
 
         if (is_callable([static::$_instance, $method])) {

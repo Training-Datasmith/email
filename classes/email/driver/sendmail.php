@@ -39,7 +39,10 @@ class Email_Driver_Sendmail extends \Email_Driver
 
         // Open a connection
         $return_path = ($this->config['return_path'] !== false) ? $this->config['return_path'] : $this->config['from']['email'];
-        $handle = @popen($this->config['sendmail_path'] . ' -oi -f '.$return_path.' -t', 'w');
+        if (! filter_var($return_path, FILTER_VALIDATE_EMAIL)) {
+            throw new \SendmailConnectionException('Invalid return-path address: '.$return_path);
+        }
+        $handle = @popen(escapeshellcmd($this->config['sendmail_path']) . ' -oi -f '.escapeshellarg($return_path).' -t', 'w');
 
         // No connection?
         if (! is_resource($handle)) {

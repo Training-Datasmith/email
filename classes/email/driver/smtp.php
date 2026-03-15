@@ -44,9 +44,9 @@ class Email_Driver_Smtp extends \Email_Driver
     }
 
     /**
-     * The SMTP connection
+     * The SMTP connection (stream resource)
      */
-    protected $smtp_connection;
+    protected mixed $smtp_connection = null;
 
     /**
      * Initiates the sending process.
@@ -114,7 +114,8 @@ class Email_Driver_Smtp extends \Email_Driver
         // Prepare for data sending
         $this->smtp_send('DATA', 354);
 
-        $lines = explode($this->config['newline'], $message['header'].preg_replace('/^\./m', '..$1', (string) $message['body']));
+        // RFC 5321 dot-stuffing: prefix lines beginning with '.' with an extra '.'
+        $lines = explode($this->config['newline'], $message['header'].(string) $message['body']);
 
         foreach ($lines as $line) {
             if (str_starts_with($line, '.')) {
@@ -169,12 +170,13 @@ class Email_Driver_Smtp extends \Email_Driver
         // Clear the smtp response
         $this->smtp_get_response();
 
-        // Just say hello!
+        // Just say hello! Sanitize SERVER_NAME to prevent SMTP command injection via Host header.
+        $hostname = preg_replace('/[^a-zA-Z0-9\-\.]/', '', (string) \Input::server('SERVER_NAME', 'localhost.local')) ?: 'localhost.local';
         try {
-            $this->smtp_send('EHLO'.' '.\Input::server('SERVER_NAME', 'localhost.local'), 250);
+            $this->smtp_send('EHLO '.$hostname, 250);
         } catch (SmtpCommandFailureException $e) {
             // Didn't work? Try HELO
-            $this->smtp_send('HELO'.' '.\Input::server('SERVER_NAME', 'localhost.local'), 250);
+            $this->smtp_send('HELO '.$hostname, 250);
         }
 
         // Enable TLS encryption if needed, and we're connecting using TCP
@@ -190,10 +192,10 @@ class Email_Driver_Smtp extends \Email_Driver
 
             // Say hello again, the service list might be updated (see RFC 3207 section 4.2)
             try {
-                $this->smtp_send('EHLO'.' '.\Input::server('SERVER_NAME', 'localhost.local'), 250);
+                $this->smtp_send('EHLO '.$hostname, 250);
             } catch (SmtpCommandFailureException) {
                 // Didn't work? Try HELO
-                $this->smtp_send('HELO'.' '.\Input::server('SERVER_NAME', 'localhost.local'), 250);
+                $this->smtp_send('HELO '.$hostname, 250);
             }
         }
 
@@ -227,11 +229,11 @@ class Email_Driver_Smtp extends \Email_Driver
             // Prepare login
             $this->smtp_send('AUTH LOGIN', 334);
 
-            // Send username
-            $this->smtp_send($username, 334);
+            // Send username (redacted from exception messages to prevent credential logging)
+            $this->smtp_send($username, 334, false, true);
 
-            // Send password
-            $this->smtp_send($password, 235);
+            // Send password (redacted from exception messages to prevent credential logging)
+            $this->smtp_send($password, 235, false, true);
 
         } catch (SmtpCommandFailureException) {
             throw new SmtpAuthenticationFailedException('Failed authentication.');
@@ -245,22 +247,25 @@ class Email_Driver_Smtp extends \Email_Driver
      * @param   string              $data           The SMTP command
      * @param   string|bool|string  $expecting      The expected response
      * @param   bool                $return_number  Set to true to return the status number
+     * @param   bool                $redact         Set to true to omit $data from exception messages (e.g. auth credentials)
      *
      * @throws \SmtpCommandFailureException When the command failed an expecting is not set to false.
      * @throws \SmtpTimeoutException        SMTP connection timed out
      *
      * @return   mixed                         Result or result number, false when expecting is false
      */
-    protected function smtp_send($data, $expecting, $return_number = false)
+    protected function smtp_send($data, $expecting, $return_number = false, $redact = false)
     {
         ! is_array($expecting) and $expecting !== false and $expecting = [$expecting];
+
+        $log_data = $redact ? '[REDACTED]' : $data;
 
         stream_set_timeout($this->smtp_connection, $this->config['smtp']['timeout']);
         if (! fputs($this->smtp_connection, $data . $this->config['newline'])) {
             if ($expecting === false) {
                 return false;
             }
-            throw new SmtpCommandFailureException('Failed executing command: '. $data);
+            throw new SmtpCommandFailureException('Failed executing command: '.$log_data);
         }
 
         $info = stream_get_meta_data($this->smtp_connection);
@@ -276,7 +281,7 @@ class Email_Driver_Smtp extends \Email_Driver
 
         // Check against expected result
         if ($expecting !== false and ! in_array($number, $expecting)) {
-            throw new SmtpCommandFailureException('Got an unexpected response from host on command: ['.$data.'] expecting: '.join(' or ', $expecting).' received: '.$response);
+            throw new SmtpCommandFailureException('Got an unexpected response from host on command: ['.$log_data.'] expecting: '.join(' or ', $expecting).' received: '.$response);
         }
 
         if ($return_number) {

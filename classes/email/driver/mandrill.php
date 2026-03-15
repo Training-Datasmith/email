@@ -154,7 +154,10 @@ class Email_Driver_Mandrill extends \Email_Driver
 
         $message_data = \Arr::merge($message_data, $message_options);
 
-        extract($this->config['mandrill']['send_options'], EXTR_SKIP);
+        $send_options = $this->config['mandrill']['send_options'];
+        $async   = $send_options['async']   ?? false;
+        $ip_pool = $send_options['ip_pool'] ?? null;
+        $send_at = $send_options['send_at'] ?? null;
 
         $message->send($message_data, $async, $ip_pool, $send_at);
 
@@ -164,7 +167,7 @@ class Email_Driver_Mandrill extends \Email_Driver
     /**
      * {@inheritdoc}
      */
-    public function attach($file, $inline = false, $cid = null, $mime = null, $name = null): void
+    public function attach($file, $inline = false, $cid = null, $mime = null, $name = null): static
     {
         parent::attach($file, $inline, $cid, $mime, $name);
 
@@ -176,6 +179,8 @@ class Email_Driver_Mandrill extends \Email_Driver
                 throw new \InvalidAttachmentsException('Non-image inline attachments are not supported by this driver.');
             }
         }
+
+        return $this;
     }
 
     /**
@@ -224,6 +229,7 @@ class Email_Driver_Mandrill extends \Email_Driver
         if (isset($this->rcpt_merge_vars[$rcpt])) {
             return \Arr::get($this->rcpt_merge_vars[$rcpt], $key);
         }
+        return null;
     }
 
     /**
@@ -281,6 +287,7 @@ class Email_Driver_Mandrill extends \Email_Driver
         if (isset($this->rcpt_metadata[$rcpt])) {
             return \Arr::get($this->rcpt_metadata[$rcpt], $key);
         }
+        return null;
     }
 
     /**

@@ -27,7 +27,10 @@ class Email_Driver_Mail extends \Email_Driver
     {
         $message = $this->build_message();
         $return_path = ($this->config['return_path'] !== false) ? $this->config['return_path'] : $this->config['from']['email'];
-        if (! @mail(static::format_addresses($this->to), $this->subject, (string) $message['body'], $message['header'], '-oi -f '.$return_path)) {
+        if (! filter_var($return_path, FILTER_VALIDATE_EMAIL)) {
+            throw new \EmailSendingFailedException('Invalid return-path address: '.$return_path);
+        }
+        if (! @mail(static::format_addresses($this->to), $this->subject, (string) $message['body'], $message['header'], '-oi -f '.escapeshellarg($return_path))) {
             throw new \EmailSendingFailedException('Failed sending email');
         }
         return true;
