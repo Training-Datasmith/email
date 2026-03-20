@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare (strict_types=1);
 /**
  * Fuel is a fast, lightweight, community driven PHP 5.4+ framework.
  *
@@ -11,25 +11,20 @@ declare(strict_types=1);
  * @copyright  2010 - 2019 Fuel Development Team
  * @link       https://fuelphp.com
  */
-
 namespace Email;
 
-class SmtpConnectionException extends \FuelException
+class Smtp_Connection_Exception extends \Fuel_Exception
 {
 }
-
-class SmtpCommandFailureException extends \EmailSendingFailedException
+class Smtp_Command_Failure_Exception extends \Email_Sending_Failed_Exception
 {
 }
-
-class SmtpTimeoutException extends \EmailSendingFailedException
+class Smtp_Timeout_Exception extends \Email_Sending_Failed_Exception
 {
 }
-
-class SmtpAuthenticationFailedException extends \FuelException
+class Smtp_Authentication_Failed_Exception extends \Fuel_Exception
 {
 }
-
 class Email_Driver_Smtp extends \Email_Driver
 {
     /**
@@ -42,12 +37,10 @@ class Email_Driver_Smtp extends \Email_Driver
             $this->smtp_disconnect();
         }
     }
-
     /**
      * The SMTP connection (stream resource)
      */
     protected mixed $smtp_connection = null;
-
     /**
      * Initiates the sending process.
      *
@@ -58,13 +51,10 @@ class Email_Driver_Smtp extends \Email_Driver
         // send the email
         try {
             return $this->_send_email();
-        }
-
-        // something failed
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             // disconnect if needed
             if ($this->smtp_connection) {
-                if ($e instanceof SmtpTimeoutException) {
+                if ($e instanceof Smtp_Timeout_Exception) {
                     // simply close the connection
                     fclose($this->smtp_connection);
                     $this->smtp_connection = null;
@@ -73,12 +63,10 @@ class Email_Driver_Smtp extends \Email_Driver
                     $this->smtp_disconnect();
                 }
             }
-
             // rethrow the exception
             throw $e;
         }
     }
-
     /**
      * Sends the actual email
      *
@@ -87,125 +75,94 @@ class Email_Driver_Smtp extends \Email_Driver
     protected function _send_email()
     {
         $message = $this->build_message(true);
-
         if (empty($this->config['smtp']['host']) or empty($this->config['smtp']['port'])) {
-            throw new \FuelException('Must supply a SMTP host and port, none given.');
+            throw new \Fuel_Exception('Must supply a SMTP host and port, none given.');
         }
-
         // Use authentication?
-        $authenticate = (empty($this->smtp_connection) and ! empty($this->config['smtp']['username']) and ! empty($this->config['smtp']['password']));
-
+        $authenticate = (empty($this->smtp_connection) and !empty($this->config['smtp']['username']) and !empty($this->config['smtp']['password']));
         // Connect
         $this->smtp_connect();
-
         // Authenticate when needed
         $authenticate and $this->smtp_authenticate();
-
         // Set return path
         $return_path = empty($this->config['return_path']) ? $this->config['from']['email'] : $this->config['return_path'];
-        $this->smtp_send('MAIL FROM:<' . $return_path .'>', 250);
-
+        $this->smtp_send('MAIL FROM:<' . $return_path . '>', 250);
         foreach (['to', 'cc', 'bcc'] as $list) {
             foreach ($this->{$list} as $recipient) {
-                $this->smtp_send('RCPT TO:<'.$recipient['email'].'>', [250, 251]);
+                $this->smtp_send('RCPT TO:<' . $recipient['email'] . '>', [250, 251]);
             }
         }
-
         // Prepare for data sending
         $this->smtp_send('DATA', 354);
-
         // RFC 5321 dot-stuffing: prefix lines beginning with '.' with an extra '.'
-        $lines = explode($this->config['newline'], $message['header'].(string) $message['body']);
-
+        $lines = explode($this->config['newline'], $message['header'] . (string) $message['body']);
         foreach ($lines as $line) {
             if (str_starts_with($line, '.')) {
-                $line = '.'.$line;
+                $line = '.' . $line;
             }
-
-            fputs($this->smtp_connection, $line.$this->config['newline']);
+            fputs($this->smtp_connection, $line . $this->config['newline']);
         }
-
         // Finish the message
         $this->smtp_send('.', 250);
-
         // Close the connection if we're not using pipelining
         $this->pipelining or $this->smtp_disconnect();
-
         return true;
     }
-
     /**
      * Connects to the given smtp and says hello to the other server.
      */
     protected function smtp_connect()
     {
         // re-use the existing connection
-        if (! empty($this->smtp_connection)) {
+        if (!empty($this->smtp_connection)) {
             return;
         }
-
         // add a transport if not given
         if (!str_contains((string) $this->config['smtp']['host'], '://')) {
-            $this->config['smtp']['host'] = 'tcp://'.$this->config['smtp']['host'];
+            $this->config['smtp']['host'] = 'tcp://' . $this->config['smtp']['host'];
         }
-
         $context = stream_context_create();
-        if (is_array($this->config['smtp']['options']) and ! empty($this->config['smtp']['options'])) {
+        if (is_array($this->config['smtp']['options']) and !empty($this->config['smtp']['options'])) {
             stream_context_set_option($context, $this->config['smtp']['options']);
         }
-
-        $this->smtp_connection = stream_socket_client(
-            $this->config['smtp']['host'].':'.$this->config['smtp']['port'],
-            $error_number,
-            $error_string,
-            $this->config['smtp']['timeout'],
-            STREAM_CLIENT_CONNECT,
-            $context
-        );
-
+        $this->smtp_connection = stream_socket_client($this->config['smtp']['host'] . ':' . $this->config['smtp']['port'], $error_number, $error_string, $this->config['smtp']['timeout'], STREAM_CLIENT_CONNECT, $context);
         if (empty($this->smtp_connection)) {
-            throw new SmtpConnectionException('Could not connect to SMTP: ('.$error_number.') '.$error_string);
+            throw new Smtp_Connection_Exception('Could not connect to SMTP: (' . $error_number . ') ' . $error_string);
         }
-
         // Clear the smtp response
         $this->smtp_get_response();
-
         // Just say hello! Sanitize SERVER_NAME to prevent SMTP command injection via Host header.
         $hostname = preg_replace('/[^a-zA-Z0-9\-\.]/', '', (string) \Input::server('SERVER_NAME', 'localhost.local')) ?: 'localhost.local';
         try {
-            $this->smtp_send('EHLO '.$hostname, 250);
-        } catch (SmtpCommandFailureException $e) {
+            $this->smtp_send('EHLO ' . $hostname, 250);
+        } catch (Smtp_Command_Failure_Exception $e) {
             // Didn't work? Try HELO
-            $this->smtp_send('HELO '.$hostname, 250);
+            $this->smtp_send('HELO ' . $hostname, 250);
         }
-
         // Enable TLS encryption if needed, and we're connecting using TCP
         if (\Arr::get($this->config, 'smtp.starttls', false) and str_starts_with((string) $this->config['smtp']['host'], 'tcp://')) {
             try {
                 $this->smtp_send('STARTTLS', 220);
-                if (! stream_socket_enable_crypto($this->smtp_connection, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
-                    throw new SmtpConnectionException('STARTTLS failed, Crypto client can not be enabled.');
+                if (!stream_socket_enable_crypto($this->smtp_connection, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+                    throw new Smtp_Connection_Exception('STARTTLS failed, Crypto client can not be enabled.');
                 }
-            } catch (SmtpCommandFailureException $e) {
-                throw new SmtpConnectionException('STARTTLS failed, invalid return code received from server.');
+            } catch (Smtp_Command_Failure_Exception $e) {
+                throw new Smtp_Connection_Exception('STARTTLS failed, invalid return code received from server.');
             }
-
             // Say hello again, the service list might be updated (see RFC 3207 section 4.2)
             try {
-                $this->smtp_send('EHLO '.$hostname, 250);
-            } catch (SmtpCommandFailureException) {
+                $this->smtp_send('EHLO ' . $hostname, 250);
+            } catch (Smtp_Command_Failure_Exception) {
                 // Didn't work? Try HELO
-                $this->smtp_send('HELO '.$hostname, 250);
+                $this->smtp_send('HELO ' . $hostname, 250);
             }
         }
-
         try {
             $this->smtp_send('HELP', 214);
-        } catch (SmtpCommandFailureException) {
+        } catch (Smtp_Command_Failure_Exception) {
             // Let this pass as some servers don't support this.
         }
     }
-
     /**
      * Close SMTP connection
      */
@@ -215,7 +172,6 @@ class Email_Driver_Smtp extends \Email_Driver
         fclose($this->smtp_connection);
         $this->smtp_connection = null;
     }
-
     /**
      * Performs authentication with the SMTP host
      */
@@ -224,23 +180,17 @@ class Email_Driver_Smtp extends \Email_Driver
         // Encode login data
         $username = base64_encode((string) $this->config['smtp']['username']);
         $password = base64_encode((string) $this->config['smtp']['password']);
-
         try {
             // Prepare login
             $this->smtp_send('AUTH LOGIN', 334);
-
             // Send username (redacted from exception messages to prevent credential logging)
             $this->smtp_send($username, 334, false, true);
-
             // Send password (redacted from exception messages to prevent credential logging)
             $this->smtp_send($password, 235, false, true);
-
-        } catch (SmtpCommandFailureException) {
-            throw new SmtpAuthenticationFailedException('Failed authentication.');
+        } catch (Smtp_Command_Failure_Exception) {
+            throw new Smtp_Authentication_Failed_Exception('Failed authentication.');
         }
-
     }
-
     /**
      * Sends data to the SMTP host
      *
@@ -256,41 +206,32 @@ class Email_Driver_Smtp extends \Email_Driver
      */
     protected function smtp_send($data, $expecting, $return_number = false, $redact = false)
     {
-        ! is_array($expecting) and $expecting !== false and $expecting = [$expecting];
-
+        !is_array($expecting) and $expecting !== false and $expecting = [$expecting];
         $log_data = $redact ? '[REDACTED]' : $data;
-
         stream_set_timeout($this->smtp_connection, $this->config['smtp']['timeout']);
-        if (! fputs($this->smtp_connection, $data . $this->config['newline'])) {
+        if (!fputs($this->smtp_connection, $data . $this->config['newline'])) {
             if ($expecting === false) {
                 return false;
             }
-            throw new SmtpCommandFailureException('Failed executing command: '.$log_data);
+            throw new Smtp_Command_Failure_Exception('Failed executing command: ' . $log_data);
         }
-
         $info = stream_get_meta_data($this->smtp_connection);
         if ($info['timed_out']) {
-            throw new SmtpTimeoutException('SMTP connection timed out.');
+            throw new Smtp_Timeout_Exception('SMTP connection timed out.');
         }
-
         // Get the reponse
         $response = $this->smtp_get_response();
-
         // Get the reponse number
         $number = (int) substr(trim($response), 0, 3);
-
         // Check against expected result
-        if ($expecting !== false and ! in_array($number, $expecting)) {
-            throw new SmtpCommandFailureException('Got an unexpected response from host on command: ['.$log_data.'] expecting: '.join(' or ', $expecting).' received: '.$response);
+        if ($expecting !== false and !in_array($number, $expecting)) {
+            throw new Smtp_Command_Failure_Exception('Got an unexpected response from host on command: [' . $log_data . '] expecting: ' . join(' or ', $expecting) . ' received: ' . $response);
         }
-
         if ($return_number) {
             return $number;
         }
-
         return $response;
     }
-
     /**
      * Get SMTP response
      *
@@ -301,24 +242,18 @@ class Email_Driver_Smtp extends \Email_Driver
     protected function smtp_get_response()
     {
         $data = '';
-
         // set the timeout.
         stream_set_timeout($this->smtp_connection, $this->config['smtp']['timeout']);
-
         while ($str = fgets($this->smtp_connection, 512)) {
             $info = stream_get_meta_data($this->smtp_connection);
             if ($info['timed_out']) {
-                throw new SmtpTimeoutException('SMTP connection timed out.');
+                throw new Smtp_Timeout_Exception('SMTP connection timed out.');
             }
-
             $data .= $str;
-
             if (substr($str, 3, 1) === ' ') {
                 break;
             }
         }
-
         return $data;
     }
-
 }

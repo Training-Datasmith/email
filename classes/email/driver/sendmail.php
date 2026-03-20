@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare (strict_types=1);
 /**
  * Fuel is a fast, lightweight, community driven PHP 5.4+ framework.
  *
@@ -11,17 +11,14 @@ declare(strict_types=1);
  * @copyright  2010 - 2019 Fuel Development Team
  * @link       https://fuelphp.com
  */
-
 namespace Email;
 
-class SendmailConnectionException extends \FuelException
+class Sendmail_Connection_Exception extends \Fuel_Exception
 {
 }
-
-class SendmailFailedException extends \EmailSendingFailedException
+class Sendmail_Failed_Exception extends \Email_Sending_Failed_Exception
 {
 }
-
 class Email_Driver_Sendmail extends \Email_Driver
 {
     /**
@@ -36,30 +33,23 @@ class Email_Driver_Sendmail extends \Email_Driver
     {
         // Build the message
         $message = $this->build_message();
-
         // Open a connection
-        $return_path = ($this->config['return_path'] !== false) ? $this->config['return_path'] : $this->config['from']['email'];
-        if (! filter_var($return_path, FILTER_VALIDATE_EMAIL)) {
-            throw new \SendmailConnectionException('Invalid return-path address: '.$return_path);
+        $return_path = $this->config['return_path'] !== false ? $this->config['return_path'] : $this->config['from']['email'];
+        if (!filter_var($return_path, FILTER_VALIDATE_EMAIL)) {
+            throw new \Sendmail_Connection_Exception('Invalid return-path address: ' . $return_path);
         }
-        $handle = @popen(escapeshellcmd($this->config['sendmail_path']) . ' -oi -f '.escapeshellarg($return_path).' -t', 'w');
-
+        $handle = @popen(escapeshellcmd($this->config['sendmail_path']) . ' -oi -f ' . escapeshellarg($return_path) . ' -t', 'w');
         // No connection?
-        if (! is_resource($handle)) {
-            throw new \SendmailConnectionException('Could not open a sendmail connection at: '.$this->config['sendmail_path']);
+        if (!is_resource($handle)) {
+            throw new \Sendmail_Connection_Exception('Could not open a sendmail connection at: ' . $this->config['sendmail_path']);
         }
-
         // Send the headers
         fputs($handle, (string) $message['header']);
-
         // Send the body
         fputs($handle, (string) $message['body']);
-
         if (pclose($handle) === -1) {
-            throw new \SendmailFailedException('Failed sending email through sendmail.');
+            throw new \Sendmail_Failed_Exception('Failed sending email through sendmail.');
         }
-
         return true;
     }
-
 }

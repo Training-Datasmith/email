@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare (strict_types=1);
 /**
  * Fuel is a fast, lightweight, community driven PHP 5.4+ framework.
  *
@@ -11,50 +11,41 @@ declare(strict_types=1);
  * @copyright  2010 - 2019 Fuel Development Team
  * @link       https://fuelphp.com
  */
-
 namespace Email;
 
-class AttachmentNotFoundException extends \FuelException
+class Attachment_Not_Found_Exception extends \Fuel_Exception
 {
 }
-
-class InvalidAttachmentsException extends \FuelException
+class Invalid_Attachments_Exception extends \Fuel_Exception
 {
 }
-
-class InvalidEmailStringEncoding extends \FuelException
+class Invalid_Email_String_Encoding extends \Fuel_Exception
 {
 }
-
-class EmailSendingFailedException extends \FuelException
+class Email_Sending_Failed_Exception extends \Fuel_Exception
 {
 }
-
-class EmailValidationFailedException extends \FuelException
+class Email_Validation_Failed_Exception extends \Fuel_Exception
 {
 }
-
 class Email
 {
     /**
      * Instance for singleton usage.
      */
     protected static ?Email_Driver $_instance = null;
-
     /**
      * Driver config defaults.
      */
     protected static $_defaults;
-
     /**
      * Email priorities
      */
-    public const P_LOWEST  = '5 (Lowest)';
-    public const P_LOW     = '4 (Low)';
-    public const P_NORMAL  = '3 (Normal)';
-    public const P_HIGH    = '2 (High)';
+    public const P_LOWEST = '5 (Lowest)';
+    public const P_LOW = '4 (Low)';
+    public const P_NORMAL = '3 (Normal)';
+    public const P_HIGH = '2 (High)';
     public const P_HIGHEST = '1 (Highest)';
-
     /**
      * Email driver forge.
      *
@@ -68,20 +59,15 @@ class Email
     public static function forge($setup = null, array $config = [])
     {
         empty($setup) and $setup = \Config::get('email.default_setup', 'default');
-        is_string($setup) and $setup = \Config::get('email.setups.'.$setup, []);
-
+        is_string($setup) and $setup = \Config::get('email.setups.' . $setup, []);
         $setup = \Arr::merge(static::$_defaults, $setup);
         $config = \Arr::merge($setup, $config);
-
-        $driver = '\\Email_Driver_'.ucfirst(strtolower((string) $config['driver']));
-
-        if (! class_exists($driver, true)) {
-            throw new \FuelException('Could not find Email driver: '.$config['driver']. ' ('.$driver.')');
+        $driver = '\Email_Driver_' . ucfirst(strtolower((string) $config['driver']));
+        if (!class_exists($driver, true)) {
+            throw new \Fuel_Exception('Could not find Email driver: ' . $config['driver'] . ' (' . $driver . ')');
         }
-
         return new $driver($config);
     }
-
     /**
      * Init, config loading.
      */
@@ -90,7 +76,6 @@ class Email
         \Config::load('email', true);
         static::$_defaults = \Config::get('email.defaults');
     }
-
     /**
      * Call rerouting for static usage.
      *
@@ -106,12 +91,9 @@ class Email
         if (static::$_instance === null) {
             static::$_instance = static::forge();
         }
-
         if (is_callable([static::$_instance, $method])) {
             return call_fuel_func_array([static::$_instance, $method], $args);
         }
-
-        throw new \BadMethodCallException('Invalid method: '.static::class.'::'.$method);
+        throw new \BadMethodCallException('Invalid method: ' . static::class . '::' . $method);
     }
-
 }
