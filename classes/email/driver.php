@@ -1224,6 +1224,7 @@ abstract class Email_Driver
 					if (stripos($this->type, 'inline') !== false)
 					{
 						$body .= $this->get_attachment_headers('inline', $this->boundaries[1]);
+						$body .= $this->alt_body.$newline.$newline;
 					}
 					$body .= '--'.$this->boundaries[1].'--'.$newline.$newline;
 					$body .= $this->get_attachment_headers('attachment', $this->boundaries[0]);
