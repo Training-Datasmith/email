@@ -2,4 +2,12 @@
 <phpunit bootstrap="tests/init.php"
          colors="true"
          stopOnFailure="false">
+	<testsuites>
+		<testsuite name="email-unit">
+			<directory suffix="Test.php">tests</directory>
+		</testsuite>
+		<testsuite name="email-unit-reverse">
+			<file>tests/AllTestsReverse.php</file>
+		</testsuite>
+	</testsuites>
 </phpunit>

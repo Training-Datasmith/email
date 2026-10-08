@@ -13,7 +13,7 @@ class EmailDriverAttachmentTest extends EmailTestCase
 		$email->from('from@example.com');
 		$email->to('to@example.com');
 		$email->subject('mix');
-		$email->html_body('<p>Hi</p><img src="photo.png" />');
+		$email->html_body('<p>ALT_ONCE</p><img src="photo.png" />');
 		$email->attach('file.txt');
 		$email->send();
 
@@ -26,5 +26,6 @@ class EmailDriverAttachmentTest extends EmailTestCase
 		$boundaries = $this->assertBoundariesWellFormed($log);
 		$this->assertGreaterThanOrEqual(2, count($boundaries));
 		$this->assertContains('filename="file.txt"', $log);
+		$this->assertSame(2, substr_count($log, 'ALT_ONCE'));
 	}
 }

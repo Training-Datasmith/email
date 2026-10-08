@@ -66,7 +66,6 @@ class EmailDriverSmtpTest extends EmailTestCase
 			}
 			catch (Email\SmtpAuthenticationFailedException $e)
 			{
-				$this->assertInstanceOf('Email\SmtpAuthenticationFailedException', $e);
 			}
 			$transcript = $this->readSmtpTranscript($server);
 			$this->assertContains('QUIT', $transcript);
@@ -90,7 +89,6 @@ class EmailDriverSmtpTest extends EmailTestCase
 			}
 			catch (Email\SmtpCommandFailureException $e)
 			{
-				$this->assertInstanceOf('Email\SmtpCommandFailureException', $e);
 			}
 			$transcript = $this->readSmtpTranscript($server);
 			$this->assertContains('QUIT', $transcript);

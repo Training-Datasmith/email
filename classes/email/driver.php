@@ -1367,7 +1367,7 @@ abstract class Email_Driver
 	 */
 	protected static function generate_alt($html, $wordwrap, $newline)
 	{
-		$html = preg_replace('/[ \t]{2,}/', ' ', $html);
+		$html = preg_replace("/[ \t]{2,}/", ' ', $html);
 		$html = trim(strip_tags(preg_replace('/<(head|title|style|script)[^>]*>.*?<\/\\1>/s', '', $html)));
 		$lines = explode($newline, $html);
 		$result = array();

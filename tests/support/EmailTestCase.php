@@ -32,7 +32,7 @@ abstract class EmailTestCase extends PHPUnit_Framework_TestCase
 		{
 			if (is_file($file))
 			{
-				@unlink($file);
+				unlink($file);
 			}
 		}
 		foreach ($this->tempDirs as $dir)
@@ -44,10 +44,13 @@ abstract class EmailTestCase extends PHPUnit_Framework_TestCase
 				{
 					foreach ($files as $file)
 					{
-						@unlink($file);
+						if (is_file($file))
+						{
+							unlink($file);
+						}
 					}
 				}
-				@rmdir($dir);
+				rmdir($dir);
 			}
 		}
 		Email\Email::$_instance = false;
@@ -103,6 +106,30 @@ abstract class EmailTestCase extends PHPUnit_Framework_TestCase
 		$this->assertContains($needle, $this->noopLogText());
 	}
 
+	protected function extractMimeParts($body, $contentType)
+	{
+		$parts = array();
+		$needle = 'Content-Type: '.$contentType;
+		$offset = 0;
+		while (($pos = stripos($body, $needle, $offset)) !== false)
+		{
+			$headerEnd = strpos($body, "\n\n", $pos);
+			if ($headerEnd === false)
+			{
+				break;
+			}
+			$contentStart = $headerEnd + 2;
+			$boundaryPos = strpos($body, "\n--", $contentStart);
+			$content = $boundaryPos === false
+				? substr($body, $contentStart)
+				: substr($body, $contentStart, $boundaryPos - $contentStart);
+			$parts[] = rtrim($content, "\r\n");
+			$offset = $contentStart + 1;
+		}
+
+		return $parts;
+	}
+
 	protected function assertBoundariesWellFormed($body)
 	{
 		preg_match_all('/boundary="([^"]+)"/', $body, $matches);
@@ -144,23 +171,35 @@ abstract class EmailTestCase extends PHPUnit_Framework_TestCase
 
 		$deadline = microtime(true) + 5;
 		$port = null;
+		$write = null;
+		$except = null;
 		while (microtime(true) < $deadline)
 		{
+			clearstatcache(true, $portFile);
 			if (is_file($portFile) && filesize($portFile) > 0)
 			{
 				$port = trim(file_get_contents($portFile));
 				break;
 			}
-			usleep(50000);
+			$read = array($pipes[1], $pipes[2]);
+			stream_select($read, $write, $except, 0, 50000);
 		}
 		$this->assertNotEmpty($port, 'SMTP test server did not publish its port');
+		$transcriptFile = $portFile.'.transcript';
+
+		if (is_resource($pipes[0]))
+		{
+			fclose($pipes[0]);
+		}
+		stream_set_blocking($pipes[1], false);
+		stream_set_blocking($pipes[2], false);
 
 		return array(
 			'proc' => $proc,
 			'pipes' => $pipes,
 			'port' => (int) $port,
 			'port_file' => $portFile,
-			'transcript_file' => $portFile.'.transcript',
+			'transcript_file' => $transcriptFile,
 		);
 	}
 
@@ -168,12 +207,20 @@ abstract class EmailTestCase extends PHPUnit_Framework_TestCase
 	{
 		if (is_resource($server['proc']))
 		{
-			@fclose($server['pipes'][0]);
-			@fclose($server['pipes'][1]);
-			@fclose($server['pipes'][2]);
+			if (is_resource($server['pipes'][0]))
+			{
+				fclose($server['pipes'][0]);
+			}
+			if (is_resource($server['pipes'][1]))
+			{
+				fclose($server['pipes'][1]);
+			}
+			if (is_resource($server['pipes'][2]))
+			{
+				fclose($server['pipes'][2]);
+			}
 			proc_terminate($server['proc']);
 			proc_close($server['proc']);
-			usleep(200000);
 		}
 	}
 
@@ -181,14 +228,31 @@ abstract class EmailTestCase extends PHPUnit_Framework_TestCase
 	{
 		$path = $server['transcript_file'];
 		$deadline = microtime(true) + 2;
+		$write = null;
+		$except = null;
 		while (microtime(true) < $deadline)
 		{
+			clearstatcache(true, $path);
 			if (is_file($path) && filesize($path) > 0)
 			{
 				return file_get_contents($path);
 			}
-			usleep(50000);
+			$read = array();
+			if (isset($server['pipes'][1]) && is_resource($server['pipes'][1]))
+			{
+				$read[] = $server['pipes'][1];
+			}
+			if (isset($server['pipes'][2]) && is_resource($server['pipes'][2]))
+			{
+				$read[] = $server['pipes'][2];
+			}
+			if ( ! empty($read))
+			{
+				stream_select($read, $write, $except, 0, 50000);
+			}
 		}
+
+		$this->assertFileExists($path);
 
 		return is_file($path) ? file_get_contents($path) : '';
 	}

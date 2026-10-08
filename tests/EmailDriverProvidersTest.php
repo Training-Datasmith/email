@@ -2,6 +2,23 @@
 
 class EmailDriverProvidersTest extends EmailTestCase
 {
+	public function testMailgunHtmlFieldIsMarkupNotMimeBlob()
+	{
+		$email = $this->forgeDriver('mailgun', array(
+			'mailgun' => array('key' => 'k', 'domain' => 'example.com'),
+		));
+		$email->from('from@example.com');
+		$email->to('to@example.com');
+		$email->subject('html');
+		$email->html_body('<p>Hello</p>');
+		$email->send();
+
+		$post = MailgunMailgun::$instance->messages->last_post;
+		$this->assertArrayHasKey('html', $post);
+		$this->assertSame('<p>Hello</p>', $post['html']);
+		$this->assertNotRegExp('/^--B1_/', $post['html']);
+	}
+
 	public function testMailgunPlainUsesTextField()
 	{
 		$email = $this->forgeDriver('mailgun', array(

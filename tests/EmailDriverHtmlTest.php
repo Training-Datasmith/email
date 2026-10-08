@@ -31,9 +31,12 @@ class EmailDriverHtmlTest extends EmailTestCase
 		$email->from('from@example.com');
 		$email->to('to@example.com');
 		$email->subject('alt');
-		$email->html_body('<p>a||b  c</p>');
+		$email->html_body("<p>a||b\t\tc</p>");
 		$email->send();
-		$this->assertContains('a||b c', $this->noopLogText());
+		$log = $this->noopLogText();
+		$plainParts = $this->extractMimeParts($log, 'text/plain');
+		$this->assertNotEmpty($plainParts);
+		$this->assertSame('a||b c', $plainParts[0]);
 	}
 
 	public function testHtmlInlineUsesRelatedMultipart()
@@ -50,6 +53,18 @@ class EmailDriverHtmlTest extends EmailTestCase
 		$log = $this->noopLogText();
 		$this->assertContains('multipart/related', $log);
 		$this->assertBoundariesWellFormed($log);
+	}
+
+	public function testDataUriBase64WithoutWhitespaceMatches()
+	{
+		$png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+		$email = $this->forgeDriver('noop');
+		$email->from('from@example.com');
+		$email->to('to@example.com');
+		$email->subject('data-nospace');
+		$email->html_body('<img src="data:image/png;base64,'.$png.'" />');
+		$email->send();
+		$this->assertContains('cid:', $this->noopLogText());
 	}
 
 	public function testDataUriInlineNoTempLeak()

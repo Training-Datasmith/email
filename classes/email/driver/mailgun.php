@@ -16,6 +16,11 @@ class Email_Driver_Mailgun extends \Email_Driver
 {
 	protected function _send()
 	{
+		if ($this->config['is_html'])
+		{
+			$this->type = 'html';
+		}
+
 		$message = $this->build_message();
 
 		$config_mailgun = $this->config['mailgun'];
