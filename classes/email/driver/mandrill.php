@@ -183,6 +183,8 @@ class Email_Driver_Mandrill extends \Email_Driver
 				throw new \InvalidAttachmentsException('Non-image inline attachments are not supported by this driver.');
 			}
 		}
+
+		return $this;
 	}
 
 	/**
@@ -193,12 +195,12 @@ class Email_Driver_Mandrill extends \Email_Driver
 	 */
 	protected function build_rcpt($list = 'to')
 	{
-		return array_map(function ($item) use ($list)
+		return array_values(array_map(function ($item) use ($list)
 		{
 			$item['type'] = $list;
 
 			return $item;
-		}, $this->{$list});
+		}, $this->{$list}));
 	}
 
 	/**
@@ -210,9 +212,11 @@ class Email_Driver_Mandrill extends \Email_Driver
 
 		foreach ($list as $_list)
 		{
-			$rcpt = array_keys($this->{$_list});
-			\Arr::delete($this->rcpt_merge_vars, $rcpt);
-			\Arr::delete($this->rcpt_metadata, $rcpt);
+			foreach (array_keys($this->{$_list}) as $email)
+			{
+				unset($this->rcpt_merge_vars[$email]);
+				unset($this->rcpt_metadata[$email]);
+			}
 		}
 
 		return parent::clear_list($list);

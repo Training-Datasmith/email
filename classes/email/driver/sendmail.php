@@ -33,7 +33,7 @@ class Email_Driver_Sendmail extends \Email_Driver
 
 		// Open a connection
 		$return_path = ($this->config['return_path'] !== false) ? $this->config['return_path'] : $this->config['from']['email'];
-		$handle = @popen($this->config['sendmail_path'] . " -oi -f ".$return_path." -t", 'w');
+		$handle = @popen($this->config['sendmail_path'].' -oi -f '.escapeshellarg($return_path).' -t', 'w');
 
 		// No connection?
 		if(! is_resource($handle))
@@ -47,7 +47,7 @@ class Email_Driver_Sendmail extends \Email_Driver
 		// Send the body
 		fputs($handle, $message['body']);
 
-		if(pclose($handle) === -1)
+		if (pclose($handle) !== 0)
 		{
 			throw new \SendmailFailedException('Failed sending email through sendmail.');
 		}

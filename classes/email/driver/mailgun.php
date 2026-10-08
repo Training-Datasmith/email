@@ -16,8 +16,6 @@ class Email_Driver_Mailgun extends \Email_Driver
 {
 	protected function _send()
 	{
-		$this->type = 'html';
-
 		$message = $this->build_message();
 
 		$config_mailgun = $this->config['mailgun'];
@@ -47,10 +45,18 @@ class Email_Driver_Mailgun extends \Email_Driver
 			'from'    => static::format_addresses(array(array('email' => $this->config['from']['email'], 'name' => $this->config['from']['name']))),
 			'to'      => static::format_addresses($this->to),
 			'subject' => $this->subject,
-			'html'    => $message['body'],
 			'attachment' => array(),
 			'inline' => array()
 		);
+
+		if ($this->config['is_html'])
+		{
+			$post_data['html'] = $message['body'];
+		}
+		else
+		{
+			$post_data['text'] = $message['body'];
+		}
 
 		// Optionally cc, bcc and alt_body
 		$this->cc and $post_data['cc'] = static::format_addresses($this->cc);

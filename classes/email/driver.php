@@ -216,7 +216,7 @@ abstract class Email_Driver
 		// Remove html comments
 		if ($remove_html_comments)
 		{
-			$html = preg_replace('/<!--(.*)-->/', '', (string) $html);
+			$html = preg_replace('/<!--.*?-->/s', '', (string) $html);
 		}
 
 		if ($auto_attach)
@@ -228,18 +228,20 @@ abstract class Email_Driver
 				foreach ($images[2] as $i => $image_url)
 				{
 					// convert inline images to cid attachments
-					if (preg_match('/^data:image\/(.*);base64,\s(.*)$/', $image_url, $image))
+					if (preg_match('/^data:image\/(.*);base64,(.*)$/i', $image_url, $image))
 					{
-						// create a temp image for the attachmment
-						$file = strtolower(tempnam(sys_get_temp_dir(), 'inline-').'.'.$image[1]);
-						file_put_contents($file, base64_decode($image[2]));
+						// create a temp image for the attachment
+						$file = tempnam(sys_get_temp_dir(), 'inline-');
+						$path = $file.'.'.strtolower($image[1]);
+						rename($file, $path);
+						file_put_contents($path, base64_decode($image[2]));
 
 						// attach the temp file
-						$cid = 'cid:'.md5($file);
-						$this->attach($file, true, $cid);
+						$cid = 'cid:'.md5($path);
+						$this->attach($path, true, $cid);
 
 						// and remove it
-						unlink($file);
+						unlink($path);
 						$html = preg_replace("/".$images[1][$i]."=\"".preg_quote($image_url, '/')."\"/Ui", $images[1][$i]."=\"".$cid."\"", $html);
 					}
 					// Don't attach absolute urls
@@ -468,6 +470,11 @@ abstract class Email_Driver
 
 		if (isset($email['name']) and isset($email['email']))
 		{
+			if ($this->config['encode_headers'] and ! empty($email['name']))
+			{
+				$email['name'] = $this->encode_mimeheader((string) $email['name']);
+			}
+
 			$this->{$list}[$email['email']] = $email;
 		}
 		else
@@ -595,12 +602,12 @@ abstract class Email_Driver
 		{
 			foreach($header as $_header => $_value)
 			{
-				empty($_value) or $this->extra_headers[$_header] = $_value;
+				$this->set_extra_header($_header, $_value);
 			}
 		}
 		else
 		{
-			empty($value) or $this->extra_headers[$header] = $value;
+			$this->set_extra_header($header, $value);
 		}
 
 		return $this;
@@ -959,7 +966,31 @@ abstract class Email_Driver
 	 */
 	protected function set_header($header, $value)
 	{
-		empty($value) or $this->headers[$header] = $value;
+		if ($this->header_value_is_set($value))
+		{
+			$this->headers[$header] = $value;
+		}
+	}
+
+	/**
+	 * @param mixed $value
+	 * @return bool
+	 */
+	protected function header_value_is_set($value)
+	{
+		return ! ($value === null || $value === false || $value === '');
+	}
+
+	/**
+	 * @param string $header
+	 * @param mixed  $value
+	 */
+	protected function set_extra_header($header, $value)
+	{
+		if ($this->header_value_is_set($value))
+		{
+			$this->extra_headers[$header] = $value;
+		}
 	}
 
 	/**
@@ -1088,9 +1119,10 @@ abstract class Email_Driver
 			case 'html_inline_attach':
 			case 'html_alt_inline_attach':
 				return 'multipart/mixed; '.$boundary;
+			case 'html_inline':
+				return $related.$boundary;
 			case 'html_alt_inline':
 			case 'html_alt':
-			case 'html_inline':
 				return 'multipart/alternative; '.$boundary;
 			default:
 				throw new \FuelException('Invalid content-type'.$mail_type);
@@ -1192,7 +1224,6 @@ abstract class Email_Driver
 					if (stripos($this->type, 'inline') !== false)
 					{
 						$body .= $this->get_attachment_headers('inline', $this->boundaries[1]);
-						$body .= $this->alt_body.$newline.$newline;
 					}
 					$body .= '--'.$this->boundaries[1].'--'.$newline.$newline;
 					$body .= $this->get_attachment_headers('attachment', $this->boundaries[0]);
@@ -1212,7 +1243,6 @@ abstract class Email_Driver
 					$body .= 'Content-Transfer-Encoding: '.$encoding.$newline.$newline;
 					$body .= $this->body.$newline.$newline;
 					$body .= $this->get_attachment_headers('inline', $this->boundaries[2]);
-					$body .= $this->alt_body.$newline.$newline;
 					$body .= '--'.$this->boundaries[2].'--'.$newline.$newline;
 					$body .= '--'.$this->boundaries[1].'--'.$newline.$newline;
 					$body .= $this->get_attachment_headers('attachment', $this->boundaries[0]);
@@ -1337,7 +1367,7 @@ abstract class Email_Driver
 	 */
 	protected static function generate_alt($html, $wordwrap, $newline)
 	{
-		$html = preg_replace('/[ |	]{2,}/m', ' ', $html);
+		$html = preg_replace('/[ \t]{2,}/', ' ', $html);
 		$html = trim(strip_tags(preg_replace('/<(head|title|style|script)[^>]*>.*?<\/\\1>/s', '', $html)));
 		$lines = explode($newline, $html);
 		$result = array();

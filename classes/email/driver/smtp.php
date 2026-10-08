@@ -114,7 +114,7 @@ class Email_Driver_Smtp extends \Email_Driver
 		// Prepare for data sending
 		$this->smtp_send('DATA', 354);
 
-		$lines = explode($this->config['newline'], $message['header'].preg_replace('/^\./m', '..$1', $message['body']));
+		$lines = explode($this->config['newline'], $message['header'].$message['body']);
 
 		foreach($lines as $line)
 		{
@@ -352,6 +352,12 @@ class Email_Driver_Smtp extends \Email_Driver
 			{
 				break;
 			}
+		}
+
+		$info = stream_get_meta_data($this->smtp_connection);
+		if ($info['timed_out'])
+		{
+			throw new SmtpTimeoutException('SMTP connection timed out.');
 		}
 
 		return $data;
