@@ -228,7 +228,7 @@ abstract class Email_Driver
 				foreach ($images[2] as $i => $image_url)
 				{
 					// convert inline images to cid attachments
-					if (preg_match('/^data:image\/(.*);base64,\s(.*)$/i', $image_url, $image))
+					if (preg_match('/^data:image\/(.*);base64,\s(.*)$/', $image_url, $image))
 					{
 						// create a temp image for the attachment
 						$file = tempnam(sys_get_temp_dir(), 'inline-');
