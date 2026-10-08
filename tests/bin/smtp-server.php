@@ -56,14 +56,12 @@ if ($scenario === 'timeout')
 	if ($cmd = fgets($conn, 512))
 	{
 		smtp_log($log, 'C: '.rtrim($cmd, "\r\n"));
-		smtp_flush_transcript($transcriptFile, $log);
 	}
 	while (fgets($conn, 512))
 	{
 	}
 	fclose($conn);
 	fclose($server);
-	smtp_flush_transcript($transcriptFile, $log);
 	exit(0);
 }
 
@@ -74,7 +72,6 @@ $state = array('ehlo' => 0, 'auth_stage' => 0);
 while ($cmd = fgets($conn, 512))
 {
 	smtp_log($log, 'C: '.rtrim($cmd, "\r\n"));
-	smtp_flush_transcript($transcriptFile, $log);
 	$upper = strtoupper(trim($cmd));
 
 	if (strpos($upper, 'QUIT') === 0)
@@ -203,4 +200,3 @@ while ($cmd = fgets($conn, 512))
 
 fclose($conn);
 fclose($server);
-smtp_flush_transcript($transcriptFile, $log);

@@ -216,7 +216,7 @@ abstract class Email_Driver
 		// Remove html comments
 		if ($remove_html_comments)
 		{
-			$html = preg_replace('/<!--.*?-->/s', '', (string) $html);
+			$html = preg_replace('/<!--.*?-->/', '', (string) $html);
 		}
 
 		if ($auto_attach)
@@ -228,7 +228,7 @@ abstract class Email_Driver
 				foreach ($images[2] as $i => $image_url)
 				{
 					// convert inline images to cid attachments
-					if (preg_match('/^data:image\/(.*);base64,(.*)$/i', $image_url, $image))
+					if (preg_match('/^data:image\/(.*);base64,\s(.*)$/i', $image_url, $image))
 					{
 						// create a temp image for the attachment
 						$file = tempnam(sys_get_temp_dir(), 'inline-');

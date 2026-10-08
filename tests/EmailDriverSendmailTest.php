@@ -39,4 +39,23 @@ class EmailDriverSendmailTest extends EmailTestCase
 		$this->assertSame('from@example.com injected', $argv[$fIndex + 1]);
 		$this->assertSame('-t', $argv[$fIndex + 2]);
 	}
+
+	public function testSendmailSubjectZeroInCapturedStream()
+	{
+		$capture = sys_get_temp_dir().DIRECTORY_SEPARATOR.'sendmail-'.uniqid('', true);
+		$this->tempFiles[] = $capture;
+		putenv('MAIL_CAPTURE_FILE='.$capture);
+
+		$email = $this->forgeDriver('sendmail', array(
+			'sendmail_path' => PHP_BINARY.' '.realpath(__DIR__.'/bin/capture-mail.php'),
+		));
+		$email->from('from@example.com');
+		$email->to('to@example.com');
+		$email->subject('0');
+		$email->body('Body');
+		$email->send();
+
+		$raw = file_get_contents($capture);
+		$this->assertContains("\nSubject: 0\n", $raw);
+	}
 }

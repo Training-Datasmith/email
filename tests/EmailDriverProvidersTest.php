@@ -36,6 +36,29 @@ class EmailDriverProvidersTest extends EmailTestCase
 		$this->assertArrayNotHasKey('html', $post);
 	}
 
+	public function testMailgunPlainWithFileAttachment()
+	{
+		$dir = $this->makeAttachDir();
+		$this->writeTempFile($dir, 'file.txt', 'attach body');
+
+		$email = $this->forgeDriver('mailgun', array(
+			'mailgun' => array('key' => 'k', 'domain' => 'example.com'),
+		));
+		$email->set_config('attach_paths', array($this->attachPathFromDir($dir)));
+		$email->from('from@example.com');
+		$email->to('to@example.com');
+		$email->subject('plain-attach');
+		$email->body('hello plain');
+		$email->attach('file.txt');
+		$email->send();
+
+		$post = MailgunMailgun::$instance->messages->last_post;
+		$this->assertSame('hello plain', $post['text']);
+		$this->assertArrayNotHasKey('html', $post);
+		$this->assertCount(1, $post['attachment']);
+		$this->assertSame('file.txt', $post['attachment'][0]['remoteName']);
+	}
+
 	public function testMandrillAttachFluentAndRecipients()
 	{
 		$dir = $this->makeAttachDir();

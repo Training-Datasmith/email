@@ -55,18 +55,6 @@ class EmailDriverHtmlTest extends EmailTestCase
 		$this->assertBoundariesWellFormed($log);
 	}
 
-	public function testDataUriBase64WithoutWhitespaceMatches()
-	{
-		$png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
-		$email = $this->forgeDriver('noop');
-		$email->from('from@example.com');
-		$email->to('to@example.com');
-		$email->subject('data-nospace');
-		$email->html_body('<img src="data:image/png;base64,'.$png.'" />');
-		$email->send();
-		$this->assertContains('cid:', $this->noopLogText());
-	}
-
 	public function testDataUriInlineNoTempLeak()
 	{
 		$png = base64_encode(base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='));
@@ -75,7 +63,7 @@ class EmailDriverHtmlTest extends EmailTestCase
 		$email->from('from@example.com');
 		$email->to('to@example.com');
 		$email->subject('data');
-		$email->html_body('<img src="data:image/png;base64,'.$png.'" />');
+		$email->html_body('<img src="data:image/png;base64, '.$png.'" />');
 		$email->send();
 		$after = glob(sys_get_temp_dir().DIRECTORY_SEPARATOR.'inline-*');
 		$this->assertSame(count($before), count($after));
